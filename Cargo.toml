@@ -27,4 +27,4 @@ sxd-document = "0.3"
 sxd-xpath = "0.4"
 
 [build-dependencies]
-pyo3-build-config = "0.22"
+pyo3-build-config = "0.26"
