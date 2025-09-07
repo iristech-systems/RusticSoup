@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg*
+.venv/
+venv/
+.env
+.dist-info/
+dist/
+build/
+*.whl
+pip-wheel-metadata/
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+docs/
+
+# Rust / Cargo / maturin
+target/
+# Consider committing Cargo.lock for reproducible builds; if so, remove the line below
+# Cargo.lock
+**/*.rs.bk
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+
+# Bench/Profiling
+perf.data*
+flamegraph.svg
+
+# Coverage
+coverage.xml

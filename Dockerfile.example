@@ -1,0 +1,44 @@
+# Example Dockerfile showing RusticSoup usage in Docker
+
+# Multi-stage build for optimal size
+FROM python:3.11-slim as builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install maturin
+RUN pip install maturin
+
+# Copy source
+WORKDIR /app
+COPY . .
+
+# Build wheel
+RUN maturin build --release --out dist
+
+# Production stage
+FROM python:3.11-slim
+
+# Install RusticSoup from wheel
+COPY --from=builder /app/dist/*.whl /tmp/
+RUN pip install /tmp/*.whl && rm /tmp/*.whl
+
+# Create app directory
+WORKDIR /app
+
+# Copy your application
+COPY examples/basic_usage.py .
+
+# Run example
+CMD ["python", "basic_usage.py"]
+
+# Alternative: If you have pre-built wheels, just:
+# COPY dist/rusticsoup-*-linux*.whl /tmp/
+# RUN pip install /tmp/rusticsoup-*.whl

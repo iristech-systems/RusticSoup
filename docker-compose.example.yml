@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  # Example scraper service using RusticSoup
+  scraper:
+    build: 
+      context: .
+      dockerfile: Dockerfile.example
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./data:/app/data  # Mount for scraped data
+    restart: unless-stopped
+    
+  # Web scraping service example  
+  web-scraper:
+    image: python:3.11-slim
+    volumes:
+      - .:/app
+      - ./dist:/wheels
+    working_dir: /app
+    command: >
+      bash -c "
+        pip install /wheels/rusticsoup-*-linux*.whl &&
+        python -c 'import rusticsoup; print(\"RusticSoup ready for scraping!\")' &&
+        python examples/basic_usage.py
+      "
+    environment:
+      - PYTHONUNBUFFERED=1

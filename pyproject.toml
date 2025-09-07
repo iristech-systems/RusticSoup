@@ -1,0 +1,52 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "rusticsoup"
+description = "Lightning-fast HTML parser and data extractor - BeautifulSoup alternative built in Rust"
+authors = [
+  {name = "Iristech Systems"},
+]
+license = { text = "MIT" }
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.11"
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Rust",
+  "Topic :: Internet :: WWW/HTTP",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Text Processing :: Markup :: HTML",
+]
+keywords = ["html", "parser", "scraping", "web", "extraction", "beautifulsoup", "rust"]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/iristech-systems/rusticsoup"
+Repository = "https://github.com/iristech-systems/rusticsoup"
+Documentation = "https://github.com/iristech-systems/rusticsoup#readme"
+Issues = "https://github.com/iristech-systems/rusticsoup/issues"
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "hypothesis>=6",
+  "ruff>=0.5",
+  "black>=24",
+  "mypy>=1",
+  "pytest-benchmark>=4",
+  "pre-commit>=3",
+]
+
+[tool.maturin]
+features = ["pyo3/extension-module", "pyo3/abi3-py311"]
+sdist-include = ["Cargo.lock", "README.md", "LICENSE"]

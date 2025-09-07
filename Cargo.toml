@@ -1,0 +1,30 @@
+[package]
+name = "rusticsoup"
+version = "0.1.0"
+edition = "2021"
+authors = ["Iristech Systems"]
+description = "Lightning-fast HTML parser and data extractor - BeautifulSoup Alternative built in Rust"
+repository = "https://github.com/iristech-systems/rusticsoup"
+license = "MIT"
+keywords = ["html", "parser", "scraping", "web", "extraction"]
+categories = ["parsing", "web-programming"]
+readme = "README.md"
+
+[lib]
+name = "rusticsoup"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.22", features = ["extension-module", "abi3-py311"] }
+scraper = "0.22"
+selectors = "0.25" 
+rayon = "1.10"
+once_cell = "1.21"
+ahash = "0.8"
+
+# XPath support (optional - can remove if not needed)
+sxd-document = "0.3"
+sxd-xpath = "0.4"
+
+[build-dependencies]
+pyo3-build-config = "0.22"
