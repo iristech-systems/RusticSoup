@@ -41,19 +41,15 @@ data = rusticsoup.extract_data(html, "div.item", {
 */
 
 use pyo3::prelude::*;
-use rayon::prelude::*;
 
 mod errors;
 mod encoding;
 mod scraper;
-mod bulk_parser;
 mod universal_extractor;
 mod bs4_api;
 
-use pyo3::prelude::*;
 use scraper::{WebScraper, Element, parse_html, extract, extract_all};
-use bulk_parser::{parse_multiple_google_pages, bulk_parse_google_shopping, benchmark_bulk_parsing};
-use universal_extractor::{extract_data, extract_data_bulk, extract_table_data};
+use universal_extractor::{extract_data, extract_table_data};
 use bs4_api::RusticSoup;
 
 #[pymodule]
@@ -72,7 +68,6 @@ fn rusticsoup(m: &Bound<'_, PyModule>) -> PyResult<()> {
     
     // Universal extractors - the main API
     m.add_function(wrap_pyfunction!(extract_data, m)?)?;
-    m.add_function(wrap_pyfunction!(extract_data_bulk, m)?)?;
     m.add_function(wrap_pyfunction!(extract_table_data, m)?)?;
     
     // Low-level HTML parsing
@@ -84,11 +79,6 @@ fn rusticsoup(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // BS4-like facade (early scaffold)
     m.add_class::<RusticSoup>()?;
-    
-    // Specialized bulk parsing (legacy/optimization)
-    m.add_function(wrap_pyfunction!(parse_multiple_google_pages, m)?)?;
-    m.add_function(wrap_pyfunction!(bulk_parse_google_shopping, m)?)?;
-    m.add_function(wrap_pyfunction!(benchmark_bulk_parsing, m)?)?;
     
     Ok(())
 }

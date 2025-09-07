@@ -22,25 +22,6 @@ def ecommerce_grid(n=60):
     return "<div class='grid'>" + "".join(rows) + "</div>"
 
 
-@pytest.mark.benchmark(group="macro_extract_bulk")
-def test_extract_data_bulk_pages(benchmark):
-    if rusticsoup is None:
-        pytest.skip("rusticsoup not importable")
-
-    pages = [ecommerce_grid(80) for _ in range(20)]
-    mapping = {
-        "title": "h2",
-        "price": "span.price",
-        "link": "a.buy@href",
-        "image": "img@src",
-    }
-
-    def run():
-        rusticsoup.extract_data_bulk(pages, "div.product", mapping)
-
-    benchmark(run)
-
-
 @pytest.mark.benchmark(group="macro_pipeline")
 def test_parse_then_select_then_attr(benchmark):
     if rusticsoup is None:

@@ -25,6 +25,8 @@ ahash = "0.8"
 # XPath support (optional - can remove if not needed)
 sxd-document = "0.3"
 sxd-xpath = "0.4"
+encoding_rs = "0.8"
+encoding_rs_io = "0.1"
 
 [build-dependencies]
 pyo3-build-config = "0.22"
