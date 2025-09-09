@@ -472,7 +472,7 @@ dependencies = [
  "memoffset",
  "once_cell",
  "portable-atomic",
- "pyo3-build-config",
+ "pyo3-build-config 0.22.6",
  "pyo3-ffi",
  "pyo3-macros",
  "unindent",
@@ -485,7 +485,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b14b5775b5ff446dd1056212d778012cbe8a0fbffd368029fd9e25b514479c38"
 dependencies = [
  "once_cell",
- "target-lexicon",
+ "target-lexicon 0.12.16",
+]
+
+[[package]]
+name = "pyo3-build-config"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4fc6ddaf24947d12a9aa31ac65431fb1b851b8f4365426e182901eabfb87df5f"
+dependencies = [
+ "target-lexicon 0.13.2",
 ]
 
 [[package]]
@@ -495,7 +504,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ab5bcf04a2cdcbb50c7d6105de943f543f9ed92af55818fd17b660390fc8636"
 dependencies = [
  "libc",
- "pyo3-build-config",
+ "pyo3-build-config 0.22.6",
 ]
 
 [[package]]
@@ -518,7 +527,7 @@ checksum = "36c011a03ba1e50152b4b394b479826cad97e7a21eb52df179cd91ac411cbfbe"
 dependencies = [
  "heck",
  "proc-macro2",
- "pyo3-build-config",
+ "pyo3-build-config 0.22.6",
  "quote",
  "syn",
 ]
@@ -612,7 +621,7 @@ dependencies = [
  "encoding_rs_io",
  "once_cell",
  "pyo3",
- "pyo3-build-config",
+ "pyo3-build-config 0.26.0",
  "rayon",
  "scraper",
  "selectors 0.25.0",
@@ -803,6 +812,12 @@ name = "target-lexicon"
 version = "0.12.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61c41af27dd6d1e27b1b16b489db798443478cef1f06a660c96db617ba5de3b1"
+
+[[package]]
+name = "target-lexicon"
+version = "0.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e502f78cdbb8ba4718f566c418c52bc729126ffd16baee5baa718cf25dd5a69a"
 
 [[package]]
 name = "tendril"
