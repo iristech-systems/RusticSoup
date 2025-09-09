@@ -39,65 +39,42 @@ def example_basic_extraction():
     for i, product in enumerate(products, 1):
         print(f"  Product {i}: {product}")
 
-def example_google_shopping():
-    """Google Shopping extraction example"""
-    print("\n🛍️  Google Shopping Example")
+def example_nested_extraction():
+    """Nested and list extraction example"""
+    print("\n📦 Nested and List Extraction Example")
     print("=" * 50)
     
     html = """
-    <div id="sh-osd__online-sellers-cont">
-        <table>
-            <tr data-is-grid-offer="true">
-                <td><a class="b5ycib" href="/url?q=https://www.chewy.com/">Chewy.com</a></td>
-                <td><span class="g9WBQb">$50.98</span><div class="drzWO">$55.50</div></td>
-                <td><a class="UxuaJe" href="/url?q=https://www.chewy.com/">Visit</a></td>
-            </tr>
-            <tr data-is-grid-offer="true">
-                <td><a class="b5ycib" href="/url?q=https://www.petco.com/">Petco.com</a></td>
-                <td><span class="g9WBQb">$52.99</span><div class="drzWO">$57.49</div></td>
-                <td><a class="UxuaJe" href="/url?q=https://www.petco.com/">Visit</a></td>
-            </tr>
-        </table>
+    <div class="comment">
+        <div class="author">
+            <span class="author-name">Alice</span>
+            <a class="author-link" href="/users/alice">Profile</a>
+        </div>
+        <div class="comment-body">
+            <p>This is a great library!</p>
+            <ul>
+                <li>Easy to use</li>
+                <li>Fast</li>
+            </ul>
+        </div>
     </div>
     """
     
-    # No Google Shopping specific logic - pure generic extraction
     field_mappings = {
-        'seller_name': 'a.b5ycib',           # Text content
-        'offer_price': 'span.g9WBQb',        # Text content  
-        'total_price': 'div.drzWO',          # Text content
-        'link': 'a.UxuaJe@href'              # Attribute extraction
+        "author": {
+            "name": ".author-name",
+            "link": ".author-link@href"
+        },
+        "comment": ".comment-body p",
+        "tags": "li@get_all"
     }
     
-    ads = rusticsoup.extract_data(html, 'tr[data-is-grid-offer="true"]', field_mappings)
+    # extract_data returns a list of items, one for each matching container
+    data = rusticsoup.extract_data(html, ".comment", field_mappings)
     
-    print(f"✅ Extracted {len(ads)} ads:")
-    for i, ad in enumerate(ads, 1):
-        print(f"  Ad {i}: {ad}")
-
-def example_bulk_processing():
-    """Bulk processing example"""
-    print("\n⚡ Bulk Processing Example")
-    print("=" * 50)
-    
-    # Multiple pages of data
-    pages = [
-        '<div class="item"><h3>Item A</h3><span class="price">$19.99</span></div>',
-        '<div class="item"><h3>Item B</h3><span class="price">$29.99</span></div>',
-        '<div class="item"><h3>Item C</h3><span class="price">$39.99</span></div>',
-    ]
-    
-    field_mappings = {
-        'name': 'h3',
-        'price': 'span.price'
-    }
-    
-    # Process all pages in parallel
-    all_results = rusticsoup.extract_data_bulk(pages, 'div.item', field_mappings)
-    
-    print(f"✅ Processed {len(all_results)} pages:")
-    for page_idx, page_results in enumerate(all_results):
-        print(f"  Page {page_idx + 1}: {page_results}")
+    print(f"✅ Extracted {len(data)} items:")
+    for item in data:
+        print(f"  - {item}")
 
 def example_table_extraction():
     """Table data extraction"""
@@ -154,8 +131,7 @@ if __name__ == "__main__":
     
     # Run all examples
     example_basic_extraction()
-    example_google_shopping()
-    example_bulk_processing()
+    example_nested_extraction()
     example_table_extraction()
     example_low_level_parsing()
     
@@ -164,5 +140,6 @@ if __name__ == "__main__":
     print("✅ Fast - 2-10x faster than BeautifulSoup")
     print("✅ Simple - one function call extracts structured data")
     print("✅ Attributes - @href, @src syntax for attribute extraction")
-    print("✅ Bulk processing - parallel processing of multiple pages")
+    print("✅ Nested data - supports nested dictionaries for complex extraction")
+    print("✅ List extraction - use @get_all to extract all matching elements")
     print("✅ No manual loops - RusticSoup handles everything")

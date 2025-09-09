@@ -186,78 +186,6 @@ impl WebScraper {
         Ok(results.into_iter().next())
     }
 
-    /// Extract Google Shopping ads with proper attribute handling
-    fn extract_google_ads(&self, py: Python) -> PyResult<PyObject> {
-        let py_list = PyList::empty_bound(py);
-        
-        // Check if page has offers
-        let container_sel = get_or_compile_selector("#sh-osd__online-sellers-cont")?;
-        if self.document.select(&container_sel).next().is_none() {
-            return Ok(py_list.into());
-        }
-        
-        // Get all offer rows
-        let row_sel = get_or_compile_selector("tr[data-is-grid-offer=\"true\"]")?;
-        
-        for row in self.document.select(&row_sel) {
-            let item_dict = PyDict::new_bound(py);
-            let row_html = Html::parse_fragment(&row.html());
-            
-            // Extract seller name
-            let seller_sel = get_or_compile_selector("a.b5ycib")?;
-            let seller_name = if let Some(seller_elem) = row_html.select(&seller_sel).next() {
-                seller_elem.text().collect::<Vec<_>>().join(" ")
-                    .replace("Opens in a new window", "").trim().to_string()
-            } else {
-                String::new()
-            };
-            
-            // Extract price
-            let price_sel = get_or_compile_selector("span.g9WBQb")?;
-            let offer_price = if let Some(price_elem) = row_html.select(&price_sel).next() {
-                price_elem.text().collect::<Vec<_>>().join(" ").trim().to_string()
-            } else {
-                String::new()
-            };
-            
-            // Extract shipping
-            let shipping_sel = get_or_compile_selector("div.drzWO")?;
-            let total_price = if let Some(shipping_elem) = row_html.select(&shipping_sel).next() {
-                shipping_elem.text().collect::<Vec<_>>().join(" ").trim().to_string()
-            } else {
-                String::new()
-            };
-            
-            // Extract link with proper Google URL handling
-            let link_sel = get_or_compile_selector("a.UxuaJe")?;
-            let link = if let Some(link_elem) = row_html.select(&link_sel).next() {
-                if let Some(href) = link_elem.value().attr("href") {
-                    if href.starts_with("/url?q=") {
-                        format!("https://www.google.com{}", href)
-                    } else {
-                        href.to_string()
-                    }
-                } else {
-                    String::new()
-                }
-            } else {
-                String::new()
-            };
-            
-            let ad_type = if total_price.is_empty() { "Local" } else { "Online" };
-            
-            item_dict.set_item("seller_name", seller_name)?;
-            item_dict.set_item("offer_price", offer_price)?;
-            item_dict.set_item("total_price", total_price)?;
-            item_dict.set_item("link", link)?;
-            item_dict.set_item("type", ad_type)?;
-            
-            py_list.append(item_dict)?;
-        }
-        
-        Ok(py_list.into())
-    }
-
     /// Get all matching XPath results as strings (Scrapy-compatible)
     fn xpath_getall(&self, xpath_expr: &str) -> PyResult<Vec<String>> {
         let html_str = self.document.html();
@@ -466,6 +394,7 @@ impl Element {
             }
         )
     }
+
 }
 
 impl Element {
