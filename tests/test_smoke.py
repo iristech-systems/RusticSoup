@@ -4,5 +4,6 @@ def test_import():
 
 def test_api_surface_exists():
     import rusticsoup
+
     assert hasattr(rusticsoup, "extract_data")
     assert hasattr(rusticsoup, "parse_html")

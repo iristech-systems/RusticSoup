@@ -2,7 +2,7 @@ import pytest
 
 try:
     import rusticsoup
-except Exception as e:  # pragma: no cover - import failure should fail tests
+except Exception:  # pragma: no cover - import failure should fail tests
     rusticsoup = None
 
 
@@ -14,7 +14,8 @@ def small_html():
             f"<li class='item'><a href='/p/{i}'><span class='price'>$ {i}.99</span></a></li>"
             for i in range(10)
         )
-        + "</ul>" "</div>"
+        + "</ul>"
+        "</div>"
     )
 
 

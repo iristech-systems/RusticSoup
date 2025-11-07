@@ -24,7 +24,7 @@ html = "<div class='item'><a href='/link'>Title</a><span>$99</span></div>"
 # Universal extraction - works with ANY website
 data = rusticsoup.extract_data(html, "div.item", {
     "title": "a",           # Text content
-    "price": "span",        # Text content  
+    "price": "span",        # Text content
     "link": "a@href"        # Attribute extraction
 })
 
@@ -69,7 +69,7 @@ fn rusticsoup(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m.add("EncodingError", py.get_type_bound::<errors::EncodingError>())?;
         Ok(())
     })?;
-    
+
     // Universal extractors - the main API
     m.add_function(wrap_pyfunction!(extract_data, m)?)?;
     m.add_function(wrap_pyfunction!(extract_table_data, m)?)?;

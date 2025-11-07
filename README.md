@@ -115,11 +115,11 @@ Works with **any HTML structure** - no site-specific parsers needed:
 # Google Shopping
 rusticsoup.extract_data(html, 'tr[data-is-grid-offer="true"]', {
     'seller': 'a.b5ycib',
-    'price': 'span.g9WBQb', 
+    'price': 'span.g9WBQb',
     'link': 'a.UxuaJe@href'
 })
 
-# Amazon Products  
+# Amazon Products
 rusticsoup.extract_data(html, '[data-component-type="s-search-result"]', {
     'title': 'h2 a span',
     'price': '.a-price-whole',
@@ -156,7 +156,7 @@ for element in soup.select('a'):
     if element.get('href'):
         links.append(element['href'])
 
-# After (RusticSoup) 
+# After (RusticSoup)
 data = rusticsoup.extract_data(html, 'div', {'links': 'a@href'})
 ```
 
@@ -176,7 +176,7 @@ Real-world scraping performance vs BeautifulSoup:
 BeautifulSoup:  8.1ms per page
 RusticSoup:     3.9ms per page  (2.1x faster)
 
-# Product grids: 50 products per page  
+# Product grids: 50 products per page
 BeautifulSoup:  14ms per page
 RusticSoup:     1.2ms per page  (12x faster)
 
@@ -327,7 +327,7 @@ ads = rusticsoup.extract_data(html, "tr.ad", {
 for ad in ads:
     # Clean price: "$29.99" → 29.99
     ad["price"] = float(ad["price"].replace("$", ""))
-    
+
     # Convert relative URLs to absolute
     if ad["link"].startswith("/"):
         ad["link"] = f"https://example.com{ad['link']}"
@@ -455,7 +455,7 @@ Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
 1. Fork the repository
 2. Create your feature branch
-3. Add tests for new functionality  
+3. Add tests for new functionality
 4. Ensure all tests pass
 5. Submit a pull request
 

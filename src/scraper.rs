@@ -9,7 +9,7 @@ use sxd_document::parser;
 use sxd_xpath::{evaluate_xpath, Value, nodeset::Node};
 
 // Cache compiled selectors for performance
-static SELECTOR_CACHE: Lazy<Mutex<AHashMap<String, Selector>>> = 
+static SELECTOR_CACHE: Lazy<Mutex<AHashMap<String, Selector>>> =
     Lazy::new(|| Mutex::new(AHashMap::new()));
 
 #[pyclass(unsendable)]
@@ -82,7 +82,7 @@ impl WebScraper {
     fn extract_grid(&self, py: Python, container_sel: &str, field_selectors: HashMap<String, String>) -> PyResult<PyObject> {
         let container = get_or_compile_selector(container_sel)?;
         let py_list = PyList::empty_bound(py);
-        
+
         // Pre-compile selectors and parse attribute specifications
         let mut compiled_specs = HashMap::new();
         for (field, spec) in &field_selectors {
@@ -103,11 +103,11 @@ impl WebScraper {
                 compiled_specs.insert(field.clone(), (selector, None));
             }
         }
-        
+
         for elem in self.document.select(&container) {
             let item_dict = PyDict::new_bound(py);
             let elem_html = Html::parse_fragment(&elem.html());
-            
+
             for (field, (selector, attr_name)) in &compiled_specs {
                 if let Some(found) = elem_html.select(selector).next() {
                     let value = if let Some(attr) = attr_name {
@@ -122,10 +122,10 @@ impl WebScraper {
                     item_dict.set_item(field.as_str(), py.None())?;
                 }
             }
-            
+
             py_list.append(item_dict)?;
         }
-        
+
         Ok(py_list.into())
     }
 
@@ -147,12 +147,12 @@ impl WebScraper {
                                     elem_html.push_str(&format!(" {}=\"{}\"", attr.name().local_part(), attr.value()));
                                 }
                                 elem_html.push('>');
-                                
+
                                 // Add text content
                                 let text_content = get_element_text(&elem);
                                 elem_html.push_str(&text_content);
                                 elem_html.push_str(&format!("</{}>", elem.name().local_part()));
-                                
+
                                 let parsed = Html::parse_fragment(&elem_html);
                                 if let Some(element_ref) = parsed.select(&Selector::parse("*").unwrap()).next() {
                                     elements.push(Element::new(element_ref));
@@ -327,7 +327,7 @@ impl Element {
                                 let text_content = get_element_text(&elem);
                                 elem_html.push_str(&text_content);
                                 elem_html.push_str(&format!("</{}>", elem.name().local_part()));
-                                
+
                                 let parsed = Html::parse_fragment(&elem_html);
                                 if let Some(element_ref) = parsed.select(&Selector::parse("*").unwrap()).next() {
                                     elements.push(Element::new(element_ref));
@@ -384,7 +384,7 @@ impl Element {
     }
 
     fn __repr__(&self) -> String {
-        format!("<Element '{}' {}>", self.tag_name, 
+        format!("<Element '{}' {}>", self.tag_name,
             if let Some(id) = self.id() {
                 format!("id='{}'", id)
             } else if let Some(class) = self.attributes.get("class") {
@@ -403,14 +403,14 @@ impl Element {
         for attr in elem.value().attrs() {
             attributes.insert(attr.0.to_string(), attr.1.to_string());
         }
-        
+
         let text_content = elem.text()
             .collect::<Vec<_>>()
             .join(" ")
             .split_whitespace()
             .collect::<Vec<_>>()
             .join(" ");
-        
+
         Element {
             html: elem.html(),
             tag_name: elem.value().name().to_string(),
@@ -422,11 +422,11 @@ impl Element {
 
 fn get_or_compile_selector(selector: &str) -> PyResult<Selector> {
     let mut cache = SELECTOR_CACHE.lock().unwrap();
-    
+
     if let Some(sel) = cache.get(selector) {
         return Ok(sel.clone());
     }
-    
+
     match Selector::parse(selector) {
         Ok(sel) => {
             cache.insert(selector.to_string(), sel.clone());
@@ -465,7 +465,7 @@ pub fn parse_html(html: &str) -> WebScraper {
 pub fn extract(py: Python, html: &str, selectors: HashMap<String, String>) -> PyResult<PyObject> {
     let doc = Html::parse_document(html);
     let result = PyDict::new_bound(py);
-    
+
     for (field, selector) in selectors {
         let sel = get_or_compile_selector(&selector)?;
         if let Some(elem) = doc.select(&sel).next() {
@@ -475,7 +475,7 @@ pub fn extract(py: Python, html: &str, selectors: HashMap<String, String>) -> Py
             result.set_item(field, py.None())?;
         }
     }
-    
+
     Ok(result.into())
 }
 
@@ -484,7 +484,7 @@ pub fn extract(py: Python, html: &str, selectors: HashMap<String, String>) -> Py
 pub fn extract_all(html: &str, selector: &str) -> PyResult<Vec<String>> {
     let doc = Html::parse_document(html);
     let sel = get_or_compile_selector(selector)?;
-    
+
     Ok(doc.select(&sel)
         .map(|elem| elem.text().collect::<Vec<_>>().join(" ").trim().to_string())
         .filter(|s| !s.is_empty())

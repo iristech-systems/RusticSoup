@@ -51,7 +51,7 @@ fn extract_item(
                 .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>(
                     format!("Invalid selector spec: {}", spec_str)
                 ))?;
-            
+
             let selector = Selector::parse(&selector_str)
                 .map_err(|_| PyErr::new::<pyo3::exceptions::PyValueError, _>(
                     format!("Invalid selector '{}' for field '{}'", selector_str, field_name_str)
@@ -110,33 +110,33 @@ fn parse_selector_spec(spec: &str) -> Option<(String, ExtractionType)> {
 pub fn extract_table_data(py: Python, html: &str, table_selector: &str) -> PyResult<PyObject> {
     let document = Html::parse_document(html);
     let py_list = PyList::empty_bound(py);
-    
+
     let table_sel = match Selector::parse(table_selector) {
         Ok(sel) => sel,
         Err(_) => return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
             format!("Invalid table selector: {}", table_selector)
         ))
     };
-    
+
     let row_sel = Selector::parse("tr").unwrap();
     let cell_sel = Selector::parse("td, th").unwrap();
-    
+
     for table in document.select(&table_sel) {
         let table_html = Html::parse_fragment(&table.html());
-        
+
         for row in table_html.select(&row_sel) {
             let row_data = PyList::empty_bound(py);
-            
+
             for cell in row.select(&cell_sel) {
                 let cell_text = cell.text().collect::<Vec<_>>().join(" ").trim().to_string();
                 row_data.append(cell_text)?;
             }
-            
+
             if row_data.len() > 0 {
                 py_list.append(row_data)?;
             }
         }
     }
-    
+
     Ok(py_list.into())
 }
