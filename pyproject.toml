@@ -4,19 +4,21 @@ build-backend = "maturin"
 
 [project]
 name = "rusticsoup"
-description = "Lightning-fast HTML parser and data extractor - BeautifulSoup alternative built in Rust"
+description = "Lightning-fast HTML parser and data extractor with WebPage API - BeautifulSoup alternative built in Rust"
 authors = [
   {name = "Iristech Systems"},
 ]
 license = { text = "MIT" }
 readme = { file = "README.md", content-type = "text/markdown" }
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
   "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -27,7 +29,7 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
   "Topic :: Text Processing :: Markup :: HTML",
 ]
-keywords = ["html", "parser", "scraping", "web", "extraction", "beautifulsoup", "rust"]
+keywords = ["html", "parser", "scraping", "web", "extraction", "beautifulsoup", "rust", "webpage", "web-poet"]
 dynamic = ["version"]
 
 [project.urls]
@@ -48,5 +50,5 @@ dev = [
 ]
 
 [tool.maturin]
-features = ["pyo3/extension-module", "pyo3/abi3-py311"]
+features = ["pyo3/extension-module", "pyo3/abi3-py39"]
 sdist-include = ["Cargo.lock", "README.md", "LICENSE"]

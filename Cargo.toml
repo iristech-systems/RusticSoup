@@ -1,9 +1,9 @@
 [package]
 name = "rusticsoup"
-version = "0.1.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["Iristech Systems"]
-description = "Lightning-fast HTML parser and data extractor - BeautifulSoup Alternative built in Rust"
+description = "Lightning-fast HTML parser and data extractor with WebPage API - BeautifulSoup Alternative built in Rust"
 repository = "https://github.com/iristech-systems/RusticSoup"
 license = "MIT"
 keywords = ["html", "parser", "scraping", "web", "extraction"]
@@ -15,7 +15,7 @@ name = "rusticsoup"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.22", features = ["extension-module", "abi3-py311"] }
+pyo3 = { version = "0.22", features = ["extension-module", "abi3-py39"] }
 scraper = "0.22"
 selectors = "0.25" 
 rayon = "1.10"
@@ -27,8 +27,6 @@ encoding_rs_io = "0.1"
 # XPath support (optional - can remove if not needed)
 sxd-document = "0.3"
 sxd-xpath = "0.4"
-encoding_rs = "0.8"
-encoding_rs_io = "0.1"
 
 [build-dependencies]
 pyo3-build-config = "0.22"

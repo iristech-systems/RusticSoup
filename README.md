@@ -1,7 +1,6 @@
 # RusticSoup 🦀🍲
 
 > Lightning-fast HTML parser and data extractor built in Rust
-> **The BeautifulSoup killer with browser-grade parsing performance**
 
 [![PyPI version](https://badge.fury.io/py/rusticsoup.svg)](https://badge.fury.io/py/rusticsoup)
 [![Python versions](https://img.shields.io/pypi/pyversions/rusticsoup.svg)](https://pypi.org/project/rusticsoup/)
@@ -15,6 +14,7 @@
 | **Product grids** | 14ms | 1.2ms | **12x faster** |
 | **Bulk processing** | Sequential | Parallel | **Up to 100x faster** |
 | **Attribute extraction** | Manual loops | `@href` syntax | **Zero loops needed** |
+| **WebPage API** | ❌ | ✅ | **web-poet inspired** |
 | **CSS selectors** | ✅ | ✅ | Same API |
 | **Memory usage** | High | Low | Rust efficiency |
 
@@ -24,10 +24,11 @@
 pip install rusticsoup
 ```
 
-```python
-import rusticsoup
+### Option 1: WebPage API (Recommended - web-poet style)
 
-# Universal extraction - works with ANY website structure
+```python
+from rusticsoup import WebPage
+
 html = """
 <div class="product">
     <h2>Amazing Product</h2>
@@ -36,6 +37,29 @@ html = """
     <img src="/image.jpg" alt="product">
 </div>
 """
+
+# Create a WebPage
+page = WebPage(html, url="https://example.com/products")
+
+# Extract single values
+title = page.text("h2")                    # "Amazing Product"
+price = page.text("span.price")            # "$29.99"
+link = page.attr("a.buy-btn", "href")      # "/buy"
+
+# Or extract structured data
+product = page.extract({
+    "title": "h2",
+    "price": "span.price",
+    "link": "a.buy-btn@href",   # @ syntax for attributes
+    "image": "img@src"
+})
+# {'title': 'Amazing Product', 'price': '$29.99', 'link': '/buy', 'image': '/image.jpg'}
+```
+
+### Option 2: Universal Extraction (Original API)
+
+```python
+import rusticsoup
 
 # Define what you want to extract
 field_mappings = {
@@ -53,6 +77,36 @@ print(products)
 ```
 
 ## 🎯 Core Features
+
+### 🌟 NEW: WebPage API (web-poet inspired)
+
+High-level, declarative API for web scraping:
+
+```python
+from rusticsoup import WebPage
+
+page = WebPage(html, url="https://example.com")
+
+# Simple extraction
+title = page.text("h1")
+links = page.attr_all("a", "href")
+
+# Extract multiple items at once
+products = page.extract_all(".product", {
+    "name": "h2",
+    "price": ".price",
+    "url": "a@href"
+})
+
+# Check existence
+if page.has("nav.menu"):
+    nav_items = page.text_all("nav.menu a")
+
+# URL resolution
+absolute_url = page.absolute_url("/products/123")
+```
+
+**[📖 Full WebPage API Documentation](WEBPAGE_API.md)** | **[🚀 Quick Start Guide](WEBPAGE_QUICKSTART.md)**
 
 ### ✅ Universal Extraction
 Works with **any HTML structure** - no site-specific parsers needed:
@@ -133,7 +187,35 @@ RusticSoup:     Parallel ~14ms   (100x faster)
 
 ## 🛠️ API Reference
 
-### Core Functions
+### Two Powerful APIs
+
+RusticSoup provides two complementary APIs:
+
+1. **[WebPage API](WEBPAGE_API.md)** - High-level, object-oriented (Recommended for new projects)
+2. **Universal Extraction API** - Function-based, great for batch processing
+
+### WebPage API
+
+```python
+from rusticsoup import WebPage
+
+page = WebPage(html, url="https://example.com")
+```
+
+**Key Methods:**
+- `text(selector)` - Extract text from first match
+- `text_all(selector)` - Extract text from all matches
+- `attr(selector, attribute)` - Extract attribute from first match
+- `attr_all(selector, attribute)` - Extract attribute from all matches
+- `extract(mappings)` - Extract structured data
+- `extract_all(container, mappings)` - Extract multiple items
+- `has(selector)` - Check if selector matches
+- `count(selector)` - Count matching elements
+- `absolute_url(url)` - Convert relative to absolute URL
+
+**[📖 Full WebPage Documentation](WEBPAGE_API.md)**
+
+### Universal Extraction API
 
 #### `extract_data(html, container_selector, field_mappings)`
 Universal HTML data extraction - works with any website structure.
@@ -150,7 +232,7 @@ Parallel processing of multiple HTML pages.
 
 **Parameters:**
 - `html_pages`: List of HTML strings
-- `container_selector`: CSS selector for container elements  
+- `container_selector`: CSS selector for container elements
 - `field_mappings`: Dict mapping field names to CSS selectors
 
 **Returns:** List of lists - one result list per input page
@@ -169,6 +251,7 @@ Low-level HTML parsing - returns WebScraper object for manual DOM traversal.
 |--------|-------------|---------|
 | `"selector"` | Extract text content | `"h1"` → "Page Title" |
 | `"selector@attr"` | Extract attribute | `"a@href"` → "/page.html" |
+| `"selector@get_all"` | Extract all text | `"p@get_all"` → ["P1", "P2"] |
 | `"complex selector"` | Any CSS selector | `"div.class > p:first-child"` |
 
 ### Supported Attributes
@@ -212,8 +295,10 @@ except Exception as e:
 
 ## 🆚 Migration from BeautifulSoup
 
-### Before (BeautifulSoup)
+### Option 1: WebPage API (Recommended)
+
 ```python
+# BeautifulSoup - Imperative, verbose
 from bs4 import BeautifulSoup
 
 soup = BeautifulSoup(html, 'html.parser')
@@ -221,18 +306,30 @@ products = []
 
 for product in soup.select('div.product'):
     title = product.select_one('h2')
-    price = product.select_one('span.price') 
+    price = product.select_one('span.price')
     link = product.select_one('a')
-    
+
     products.append({
         'title': title.text if title else '',
         'price': price.text if price else '',
         'link': link.get('href') if link else ''
     })
+
+# RusticSoup WebPage - Declarative, concise
+from rusticsoup import WebPage
+
+page = WebPage(html)
+products = page.extract_all('div.product', {
+    'title': 'h2',
+    'price': 'span.price',
+    'link': 'a@href'
+})
 ```
 
-### After (RusticSoup)
+### Option 2: Universal Extraction API
+
 ```python
+# RusticSoup Universal API - Function-based
 import rusticsoup
 
 products = rusticsoup.extract_data(html, 'div.product', {
@@ -243,6 +340,29 @@ products = rusticsoup.extract_data(html, 'div.product', {
 ```
 
 **90% less code, 2-10x faster, handles attributes automatically!**
+
+### web-poet to RusticSoup
+
+RusticSoup's WebPage API is compatible with web-poet patterns:
+
+```python
+# web-poet (async, slower)
+from web_poet import WebPage
+
+async def parse(page: WebPage):
+    title = await page.css("h1::text").get()
+    links = await page.css("a::attr(href)").getall()
+    return {"title": title, "links": links}
+
+# RusticSoup WebPage (sync, faster - no async needed!)
+from rusticsoup import WebPage
+
+def parse(html: str):
+    page = WebPage(html)
+    title = page.text("h1")
+    links = page.attr_all("a", "href")
+    return {"title": title, "links": links}
+```
 
 ## 🔧 Installation
 
@@ -287,11 +407,18 @@ Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
+## 📚 Documentation
+
+- **[WebPage API Documentation](WEBPAGE_API.md)** - Complete guide to the WebPage API
+- **[WebPage Quick Start](WEBPAGE_QUICKSTART.md)** - Get started with WebPage in 5 minutes
+- **[Test Examples](test_webpage_api.py)** - Working examples and test suite
+
 ## 🙏 Acknowledgments
 
 - Built on [html5ever](https://github.com/servo/html5ever) - Mozilla's HTML5 parser
 - Powered by [scraper](https://github.com/causal-agent/scraper) - CSS selector support
 - Inspired by [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/) - the original HTML parsing library
+- WebPage API inspired by [web-poet](https://github.com/scrapinghub/web-poet) - declarative web scraping
 
 ---
 
