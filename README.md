@@ -215,6 +215,62 @@ page = WebPage(html, url="https://example.com")
 
 **[📖 Full WebPage Documentation](WEBPAGE_API.md)**
 
+### 🔄 Field Transforms (NEW in v0.2.2)
+
+Apply transformations to extracted data automatically:
+
+```python
+from rusticsoup import WebPage, Field
+from rusticsoup_helpers import ItemPage
+
+class Article(ItemPage):
+    # Single transform
+    title = Field(css="h1", transform=str.upper)
+
+    # Chain multiple transforms
+    author = Field(
+        css=".author",
+        transform=[
+            str.strip,
+            str.title,
+            lambda s: s.replace("by ", "")
+        ]
+    )
+
+    # Transform with attribute extraction
+    price = Field(
+        css=".price",
+        transform=[
+            str.strip,
+            lambda s: float(s.replace("$", ""))
+        ]
+    )
+
+    # Transform lists
+    tags = Field(
+        css=".tag",
+        get_all=True,
+        transform=lambda tags: [t.upper() for t in tags]
+    )
+
+page = WebPage(html)
+article = Article(page)
+
+print(article.title)   # "UNDERSTANDING RUST"
+print(article.author)  # "Jane Smith"
+print(article.price)   # 19.99
+print(article.tags)    # ["PYTHON", "RUST", "WEB"]
+```
+
+**Benefits:**
+- ✅ No manual post-processing needed
+- ✅ Clean, declarative field definitions
+- ✅ Reusable transform functions
+- ✅ Chain multiple transforms in order
+- ✅ Works with single values, lists, and attributes
+
+**[📖 Full Transform Documentation](FIELD_TRANSFORM.md)**
+
 ### Universal Extraction API
 
 #### `extract_data(html, container_selector, field_mappings)`
@@ -406,12 +462,6 @@ Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) file for details.
-
-## 📚 Documentation
-
-- **[WebPage API Documentation](WEBPAGE_API.md)** - Complete guide to the WebPage API
-- **[WebPage Quick Start](WEBPAGE_QUICKSTART.md)** - Get started with WebPage in 5 minutes
-- **[Test Examples](test_webpage_api.py)** - Working examples and test suite
 
 ## 🙏 Acknowledgments
 

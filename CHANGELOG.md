@@ -5,6 +5,48 @@ All notable changes to RusticSoup will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2025-01-07
+
+### Added
+
+- **Field Transform Feature**: Apply transformations to extracted data automatically
+  - `Field(css, transform=callable)` - Single transform function
+  - `Field(css, transform=[func1, func2, ...])` - Chain multiple transforms
+  - Transforms execute in order after extraction
+  - Works with text extraction, attribute extraction, and `get_all`
+  - Integrates seamlessly with ItemPage pattern
+
+### Documentation
+
+- Added `FIELD_TRANSFORM.md` - Complete transform documentation
+- Added `test_field_transform.py` - Comprehensive transform test suite (7 tests)
+- Updated README with Field transform examples
+
+### Features
+
+**Transform Types:**
+- Single callable: `transform=str.upper`
+- Multiple callables: `transform=[str.strip, str.upper, lambda s: s.replace(" ", "_")]`
+- Works with lists: `transform=lambda items: [i.upper() for i in items]`
+- Works with attributes: `Field(css="a", attr="href", transform=normalize_url)`
+
+**Integration:**
+```python
+class Article(ItemPage):
+    title = Field(css="h1", transform=str.upper)
+    author = Field(css=".author", transform=[str.strip, str.title])
+    price = Field(css=".price", transform=[str.strip, lambda s: float(s.replace("$", ""))])
+    tags = Field(css=".tag", get_all=True, transform=lambda t: [x.upper() for x in t])
+```
+
+### Benefits
+
+- ✅ No manual post-processing needed
+- ✅ Clean, declarative field definitions
+- ✅ Reusable transform functions
+- ✅ Chain transforms in order
+- ✅ Works with all extraction types
+
 ## [0.2.1] - 2025-01-07
 
 ### Added
