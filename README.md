@@ -78,15 +78,15 @@ print(products)
 
 ## 📚 Documentation & Examples
 
-- Help Center: [help/README.md](docs/help/README.md)
-- Quick Start: [help/quickstart.md](docs/help/quickstart.md)
-- WebPage API: [help/webpage_api.md](docs/help/webpage_api.md)
-- Field Usage: [help/field_usage.md](docs/help/field_usage.md)
-- Field Transform: [help/field_transform.md](docs/help/field_transform.md)
-- Containers & Mappings: [help/containers_and_mappings.md](docs/help/containers_and_mappings.md)
-- Fallback Selectors: [help/fallback_selectors.md](docs/help/fallback_selectors.md)
-- ItemPage: Containers + Mapping: [help/itempage_containers.md](docs/help/itempage_containers.md)
-- PageObject Pattern: [help/page_object_pattern.md](docs/help/page_object_pattern.md)
+- Help Center: [help/README.md](help/README.md)
+- Quick Start: [help/quickstart.md](help/quickstart.md)
+- WebPage API: [help/webpage_api.md](help/webpage_api.md)
+- Field Usage: [help/field_usage.md](help/field_usage.md)
+- Field Transform: [help/field_transform.md](help/field_transform.md)
+- Containers & Mappings: [help/containers_and_mappings.md](help/containers_and_mappings.md)
+- Fallback Selectors: [help/fallback_selectors.md](help/fallback_selectors.md)
+- ItemPage: Containers + Mapping: [help/itempage_containers.md](help/itempage_containers.md)
+- PageObject Pattern: [help/page_object_pattern.md](help/page_object_pattern.md)
 - Examples: [examples/](examples)
 
 ## 🎯 Core Features
