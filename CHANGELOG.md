@@ -5,6 +5,28 @@ All notable changes to RusticSoup will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.25] - 2025-11-07
+
+### Changed
+
+- **Dependency Updates**: Updated core dependencies for improved performance and compatibility
+  - `scraper`: 0.22.0 → 0.24.0
+  - `rayon`: 1.10.0 → 1.11.0
+  - `selectors`: 0.25.0 → 0.26.0
+  - Kept `pyo3` at 0.22 for stability (0.26 requires breaking changes)
+
+### Fixed
+
+- Fixed `Field` transform parameter to properly accept transform functions
+- Resolved build caching issues that prevented proper module updates
+- All existing tests continue to pass with updated dependencies
+
+### Notes
+
+- This is a maintenance release with dependency updates
+- All existing functionality remains unchanged
+- Fully backward compatible with 0.2.2
+
 ## [0.2.2] - 2025-01-07
 
 ### Added
