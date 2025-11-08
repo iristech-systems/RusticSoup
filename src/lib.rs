@@ -58,7 +58,7 @@ use page_object::{Field, PageObject, Processor, processor, extract_page_object};
 
 #[pymodule]
 fn rusticsoup(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add("__version__", "0.2.25")?;
+    m.add("__version__", "0.2.26")?;
     m.add("__doc__", "Lightning-fast HTML parser and data extractor with WebPage API - BeautifulSoup killer built in Rust")?;
 
     // Exceptions (exposed types)

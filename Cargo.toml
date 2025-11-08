@@ -1,6 +1,6 @@
 [package]
 name = "rusticsoup"
-version = "0.2.25"
+version = "0.2.26"
 edition = "2021"
 authors = ["Iristech Systems"]
 description = "Lightning-fast HTML parser and data extractor with WebPage API - BeautifulSoup Alternative built in Rust"

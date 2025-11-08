@@ -51,4 +51,5 @@ dev = [
 
 [tool.maturin]
 features = ["pyo3/extension-module", "pyo3/abi3-py39"]
+python-source = "python"
 sdist-include = ["Cargo.lock", "README.md", "LICENSE"]

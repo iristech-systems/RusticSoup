@@ -5,7 +5,16 @@ All notable changes to RusticSoup will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.25] - 2025-11-07
+## [0.2.26] - 2025-11-07
+
+### Added
+
+- **Built-in PageObject Helpers**: Core helper classes now included in the main package
+  - `ItemPage` - Base class for auto-extracting page objects (no longer needs separate import)
+  - `AutoExtract` - Decorator for auto-extraction
+  - `page_object` - Function decorator for page objects
+  - `PageObjectMeta` - Metaclass for Field collection
+  - All helpers now available directly from `rusticsoup` import
 
 ### Changed
 
@@ -21,11 +30,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resolved build caching issues that prevented proper module updates
 - All existing tests continue to pass with updated dependencies
 
+### Migration
+
+**Before (0.2.2):**
+```python
+from rusticsoup import WebPage, Field
+from rusticsoup_helpers import ItemPage  # Separate file needed
+```
+
+**Now (0.2.26):**
+```python
+from rusticsoup import WebPage, Field, ItemPage  # All in one package!
+```
+
 ### Notes
 
-- This is a maintenance release with dependency updates
+- This is a major improvement release with dependency updates and integrated helpers
 - All existing functionality remains unchanged
 - Fully backward compatible with 0.2.2
+- `rusticsoup_helpers.py` is no longer needed - everything is built-in
+
+## [0.2.25] - 2025-11-07
+
+*Skipped - version was released early before helper integration was complete*
 
 ## [0.2.2] - 2025-01-07
 
