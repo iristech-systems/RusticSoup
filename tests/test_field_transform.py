@@ -2,8 +2,7 @@
 Test Field transform functionality
 """
 
-from rusticsoup import WebPage, Field
-from rusticsoup_helpers import ItemPage
+from rusticsoup import WebPage, Field, ItemPage
 
 
 def test_single_transform():

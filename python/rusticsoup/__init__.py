@@ -9,11 +9,14 @@ helper classes for the PageObject pattern.
 from .rusticsoup import *  # noqa: F403
 
 # Import specific items we need for type hints and runtime checks
-from .rusticsoup import Field, WebPage, rusticsoup  # noqa: F401
+from .rusticsoup import Field, WebPage  # noqa: F401
+
+# Import the rust module itself to access metadata
+from . import rusticsoup as _rusticsoup_module
 
 # Import version and metadata from Rust module
-__doc__ = rusticsoup.__doc__
-__version__ = rusticsoup.__version__
+__doc__ = _rusticsoup_module.__doc__
+__version__ = _rusticsoup_module.__version__
 
 
 # Python-side helper classes for PageObject pattern
@@ -185,7 +188,9 @@ def page_object(cls):
 
 
 # Update __all__ to include helper classes
-__all__ = list(rusticsoup.__all__ if hasattr(rusticsoup, "__all__") else []) + [
+__all__ = list(
+    _rusticsoup_module.__all__ if hasattr(_rusticsoup_module, "__all__") else []
+) + [
     "ItemPage",
     "AutoExtract",
     "page_object",

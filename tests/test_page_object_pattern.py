@@ -7,8 +7,7 @@ This demonstrates three ways to use the PageObject pattern with RusticSoup:
 3. Manual extraction with Fields
 """
 
-from rusticsoup import WebPage, Field
-from rusticsoup_helpers import ItemPage, page_object
+from rusticsoup import WebPage, Field, ItemPage, page_object
 
 
 def test_item_page_basic():
