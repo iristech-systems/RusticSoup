@@ -12,6 +12,31 @@ use sxd_xpath::{evaluate_xpath, Value, nodeset::Node};
 static SELECTOR_CACHE: Lazy<Mutex<AHashMap<String, Selector>>> =
     Lazy::new(|| Mutex::new(AHashMap::new()));
 
+/// Fast HTML scraper with CSS selector and XPath support.
+///
+/// WebScraper provides low-level HTML parsing with cached CSS selectors
+/// for optimal performance. It supports CSS selectors, XPath expressions,
+/// and grid extraction for structured data.
+///
+/// # Examples
+///
+/// ```python
+/// from rusticsoup import WebScraper
+///
+/// scraper = WebScraper(html_string)
+///
+/// # CSS selector
+/// elements = scraper.select(".product")
+/// first_elem = scraper.select_one("h1")
+///
+/// # Extract data
+/// text = scraper.text()
+/// links = scraper.links()
+/// images = scraper.images()
+///
+/// # XPath
+/// nodes = scraper.xpath("//div[@class='content']")
+/// ```
 #[pyclass(unsendable)]
 pub struct WebScraper {
     document: Html,
@@ -26,7 +51,19 @@ impl WebScraper {
         }
     }
 
-    /// Select all elements matching the CSS selector
+    /// Select all elements matching the CSS selector.
+    ///
+    /// # Arguments
+    ///
+    /// * `selector` - CSS selector string
+    ///
+    /// # Returns
+    ///
+    /// List of Element objects matching the selector
+    ///
+    /// # Raises
+    ///
+    /// * `ValueError` - If the CSS selector is invalid
     pub fn select(&self, selector: &str) -> PyResult<Vec<Element>> {
         let sel = get_or_compile_selector(selector)?;
         Ok(self.document.select(&sel)
@@ -34,7 +71,19 @@ impl WebScraper {
             .collect())
     }
 
-    /// Select first element matching the CSS selector
+    /// Select the first element matching the CSS selector.
+    ///
+    /// # Arguments
+    ///
+    /// * `selector` - CSS selector string
+    ///
+    /// # Returns
+    ///
+    /// Element object if found, None otherwise
+    ///
+    /// # Raises
+    ///
+    /// * `ValueError` - If the CSS selector is invalid
     pub fn select_one(&self, selector: &str) -> PyResult<Option<Element>> {
         let sel = get_or_compile_selector(selector)?;
         Ok(self.document.select(&sel)
@@ -42,7 +91,13 @@ impl WebScraper {
             .map(|elem| Element::new(elem)))
     }
 
-    /// Extract all text from the document
+    /// Extract all text content from the entire document.
+    ///
+    /// Collects all text nodes, normalizes whitespace, and joins with single spaces.
+    ///
+    /// # Returns
+    ///
+    /// Cleaned text content of the document
     pub fn text(&self) -> String {
         self.document.root_element()
             .text()
@@ -76,9 +131,34 @@ impl WebScraper {
             .collect())
     }
 
-    /// Extract data using multiple selectors at once (for product grids)
-    /// Supports both text and attribute extraction
-    /// Use format "selector@attr" to extract attribute, e.g. "a@href"
+    /// Extract structured data from repeated elements (product grids, lists, etc.).
+    ///
+    /// Finds all container elements and extracts specified fields from each.
+    /// Supports both text and attribute extraction using the "@" syntax.
+    ///
+    /// # Arguments
+    ///
+    /// * `container_sel` - CSS selector for container elements
+    /// * `field_selectors` - Dictionary mapping field names to selector specs
+    ///
+    /// # Selector Format
+    ///
+    /// * `"selector"` - Extract text from element
+    /// * `"selector@attr"` - Extract attribute value (e.g., "a@href", "img@src")
+    ///
+    /// # Returns
+    ///
+    /// List of dictionaries with extracted field values
+    ///
+    /// # Examples
+    ///
+    /// ```python
+    /// products = scraper.extract_grid(".product", {
+    ///     'title': 'h3',
+    ///     'price': '.price',
+    ///     'link': 'a@href'
+    /// })
+    /// ```
     fn extract_grid(&self, py: Python, container_sel: &str, field_selectors: HashMap<String, String>) -> PyResult<PyObject> {
         let container = get_or_compile_selector(container_sel)?;
         let py_list = PyList::empty_bound(py);
@@ -129,7 +209,22 @@ impl WebScraper {
         Ok(py_list.into())
     }
 
-    /// XPath selection - returns list of matching elements
+    /// Select elements using XPath expressions.
+    ///
+    /// # Arguments
+    ///
+    /// * `xpath_expr` - XPath expression string
+    ///
+    /// # Returns
+    ///
+    /// List of Element objects matching the XPath
+    ///
+    /// # Examples
+    ///
+    /// ```python
+    /// elements = scraper.xpath("//div[@class='product']")
+    /// links = scraper.xpath("//a[contains(@href, 'product')]")
+    /// ```
     fn xpath(&self, xpath_expr: &str) -> PyResult<Vec<Element>> {
         let html_str = self.document.html();
         match parser::parse(&html_str) {

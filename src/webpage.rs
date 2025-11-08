@@ -3,8 +3,45 @@ use pyo3::types::{PyDict, PyList, PyString};
 use scraper::{Html, Selector, ElementRef};
 use std::collections::HashMap;
 
-/// WebPage - A high-level abstraction for parsed HTML pages
-/// Similar to web-poet's WebPage, provides metadata and structured access to HTML
+/// High-level abstraction for parsed HTML pages with metadata and structured access.
+///
+/// WebPage provides a powerful, BeautifulSoup-like interface for HTML parsing and data extraction.
+/// Similar to web-poet's WebPage, it combines the parsed HTML document with metadata like URL
+/// and custom attributes for comprehensive page representation.
+///
+/// # Arguments
+///
+/// * `html` - HTML string to parse
+/// * `url` - Optional URL of the page (used for absolute URL resolution)
+/// * `metadata` - Optional dictionary of custom metadata (headers, timestamps, etc.)
+///
+/// # Examples
+///
+/// ```python
+/// from rusticsoup import WebPage
+///
+/// # Basic usage
+/// page = WebPage(html_string)
+///
+/// # With URL and metadata
+/// page = WebPage(
+///     html_string,
+///     url="https://example.com/product/123",
+///     metadata={"fetch_time": "2024-01-01", "status": "200"}
+/// )
+///
+/// # Extract data
+/// title = page.text("h1.title")
+/// links = page.attr_all("a", "href")
+/// prices = page.text_all(".price")
+///
+/// # Structured extraction
+/// data = page.extract({
+///     'title': 'h1',
+///     'price': '.price',
+///     'image': 'img@src'
+/// })
+/// ```
 #[pyclass(unsendable)]
 #[derive(Clone)]
 pub struct WebPage {
@@ -30,13 +67,21 @@ impl WebPage {
         }
     }
 
-    /// Get the page URL
+    /// Get the page URL.
+    ///
+    /// # Returns
+    ///
+    /// The page URL if provided, None otherwise
     #[getter]
     pub fn url(&self) -> Option<String> {
         self.url.clone()
     }
 
-    /// Get page metadata
+    /// Get page metadata as a dictionary.
+    ///
+    /// # Returns
+    ///
+    /// Dictionary containing all metadata key-value pairs
     #[getter]
     pub fn metadata(&self, py: Python) -> PyResult<PyObject> {
         let dict = PyDict::new_bound(py);
@@ -46,7 +91,19 @@ impl WebPage {
         Ok(dict.into())
     }
 
-    /// Select a single element using CSS selector
+    /// Select a single element using CSS selector and return its HTML.
+    ///
+    /// # Arguments
+    ///
+    /// * `selector` - CSS selector string (e.g., "div.content", "#main")
+    ///
+    /// # Returns
+    ///
+    /// HTML string of the first matching element, or None if not found
+    ///
+    /// # Raises
+    ///
+    /// * `ValueError` - If the CSS selector is invalid
     pub fn css(&self, selector: &str) -> PyResult<Option<String>> {
         let sel = Selector::parse(selector)
             .map_err(|_| PyErr::new::<pyo3::exceptions::PyValueError, _>(
@@ -56,7 +113,19 @@ impl WebPage {
         Ok(self.html.select(&sel).next().map(|elem| elem.html()))
     }
 
-    /// Select all elements matching CSS selector
+    /// Select all elements matching CSS selector and return their HTML.
+    ///
+    /// # Arguments
+    ///
+    /// * `selector` - CSS selector string
+    ///
+    /// # Returns
+    ///
+    /// List of HTML strings for all matching elements
+    ///
+    /// # Raises
+    ///
+    /// * `ValueError` - If the CSS selector is invalid
     pub fn css_all(&self, py: Python, selector: &str) -> PyResult<PyObject> {
         let sel = Selector::parse(selector)
             .map_err(|_| PyErr::new::<pyo3::exceptions::PyValueError, _>(
@@ -70,7 +139,28 @@ impl WebPage {
         Ok(list.into())
     }
 
-    /// Extract text from CSS selector
+    /// Extract text content from the first element matching the CSS selector.
+    ///
+    /// Combines all text nodes within the element, joins with spaces, and trims whitespace.
+    ///
+    /// # Arguments
+    ///
+    /// * `selector` - CSS selector string
+    ///
+    /// # Returns
+    ///
+    /// Extracted text content, or empty string if element not found
+    ///
+    /// # Raises
+    ///
+    /// * `ValueError` - If the CSS selector is invalid
+    ///
+    /// # Examples
+    ///
+    /// ```python
+    /// title = page.text("h1.title")
+    /// description = page.text("div.description")
+    /// ```
     pub fn text(&self, selector: &str) -> PyResult<String> {
         let sel = Selector::parse(selector)
             .map_err(|_| PyErr::new::<pyo3::exceptions::PyValueError, _>(
@@ -82,7 +172,26 @@ impl WebPage {
             .unwrap_or_default())
     }
 
-    /// Extract text from all matching elements
+    /// Extract text content from all elements matching the CSS selector.
+    ///
+    /// # Arguments
+    ///
+    /// * `selector` - CSS selector string
+    ///
+    /// # Returns
+    ///
+    /// List of text strings from all matching elements
+    ///
+    /// # Raises
+    ///
+    /// * `ValueError` - If the CSS selector is invalid
+    ///
+    /// # Examples
+    ///
+    /// ```python
+    /// all_prices = page.text_all(".price")
+    /// all_headings = page.text_all("h2")
+    /// ```
     pub fn text_all(&self, py: Python, selector: &str) -> PyResult<PyObject> {
         let sel = Selector::parse(selector)
             .map_err(|_| PyErr::new::<pyo3::exceptions::PyValueError, _>(
@@ -97,7 +206,28 @@ impl WebPage {
         Ok(list.into())
     }
 
-    /// Extract attribute from CSS selector
+    /// Extract an attribute value from the first element matching the CSS selector.
+    ///
+    /// # Arguments
+    ///
+    /// * `selector` - CSS selector string
+    /// * `attribute` - Attribute name (e.g., "href", "src", "data-id")
+    ///
+    /// # Returns
+    ///
+    /// Attribute value if element and attribute exist, None otherwise
+    ///
+    /// # Raises
+    ///
+    /// * `ValueError` - If the CSS selector is invalid
+    ///
+    /// # Examples
+    ///
+    /// ```python
+    /// link = page.attr("a.product-link", "href")
+    /// image = page.attr("img.main", "src")
+    /// data_id = page.attr("div.item", "data-id")
+    /// ```
     pub fn attr(&self, selector: &str, attribute: &str) -> PyResult<Option<String>> {
         let sel = Selector::parse(selector)
             .map_err(|_| PyErr::new::<pyo3::exceptions::PyValueError, _>(
@@ -108,7 +238,27 @@ impl WebPage {
             .and_then(|elem| elem.value().attr(attribute).map(String::from)))
     }
 
-    /// Extract attribute from all matching elements
+    /// Extract an attribute value from all elements matching the CSS selector.
+    ///
+    /// # Arguments
+    ///
+    /// * `selector` - CSS selector string
+    /// * `attribute` - Attribute name
+    ///
+    /// # Returns
+    ///
+    /// List of attribute values from all matching elements that have the attribute
+    ///
+    /// # Raises
+    ///
+    /// * `ValueError` - If the CSS selector is invalid
+    ///
+    /// # Examples
+    ///
+    /// ```python
+    /// all_links = page.attr_all("a", "href")
+    /// all_images = page.attr_all("img", "src")
+    /// ```
     pub fn attr_all(&self, py: Python, selector: &str, attribute: &str) -> PyResult<PyObject> {
         let sel = Selector::parse(selector)
             .map_err(|_| PyErr::new::<pyo3::exceptions::PyValueError, _>(
@@ -124,7 +274,36 @@ impl WebPage {
         Ok(list.into())
     }
 
-    /// Extract structured data using field mappings (like extract_data but on WebPage)
+    /// Extract structured data using field mappings.
+    ///
+    /// Provides a declarative way to extract multiple fields at once using a dictionary
+    /// that maps field names to selector specifications.
+    ///
+    /// # Arguments
+    ///
+    /// * `field_mappings` - Dictionary mapping field names to selector specs
+    ///
+    /// # Selector Spec Format
+    ///
+    /// * `"selector"` - Extract text from selector
+    /// * `"selector@attr"` - Extract attribute from selector
+    /// * `"selector@get_all"` - Extract text from all matching elements
+    /// * `"selector@attr@get_all"` - Extract attribute from all matching elements
+    ///
+    /// # Returns
+    ///
+    /// Dictionary with extracted values
+    ///
+    /// # Examples
+    ///
+    /// ```python
+    /// data = page.extract({
+    ///     'title': 'h1.title',
+    ///     'price': '.price',
+    ///     'link': 'a.product@href',
+    ///     'all_images': 'img@src@get_all'
+    /// })
+    /// ```
     pub fn extract(&self, py: Python, field_mappings: &Bound<'_, PyDict>) -> PyResult<PyObject> {
         let result = PyDict::new_bound(py);
 
@@ -140,7 +319,37 @@ impl WebPage {
         Ok(result.into())
     }
 
-    /// Extract multiple items using container selector and field mappings
+    /// Extract multiple items using a container selector and field mappings.
+    ///
+    /// Finds all containers matching the selector, then extracts fields from each container.
+    /// Perfect for extracting lists of products, reviews, or any repeated structure.
+    ///
+    /// # Arguments
+    ///
+    /// * `container_selector` - CSS selector for the container elements
+    /// * `field_mappings` - Dictionary mapping field names to selector specs
+    ///
+    /// # Returns
+    ///
+    /// List of dictionaries, one per container, with extracted fields
+    ///
+    /// # Examples
+    ///
+    /// ```python
+    /// products = page.extract_all('.product', {
+    ///     'name': 'h3.title',
+    ///     'price': '.price',
+    ///     'link': 'a@href',
+    ///     'image': 'img@src'
+    /// })
+    /// # [{'name': '...', 'price': '...', ...}, {...}, ...]
+    ///
+    /// reviews = page.extract_all('.review', {
+    ///     'author': '.author',
+    ///     'rating': '.stars@data-rating',
+    ///     'text': '.review-text'
+    /// })
+    /// ```
     pub fn extract_all(&self, py: Python, container_selector: &str, field_mappings: &Bound<'_, PyDict>) -> PyResult<PyObject> {
         let list = PyList::empty_bound(py);
 
@@ -157,12 +366,35 @@ impl WebPage {
         Ok(list.into())
     }
 
-    /// Get raw HTML content
+    /// Get the raw HTML content of the entire page.
+    ///
+    /// # Returns
+    ///
+    /// Complete HTML document as a string
     pub fn html(&self) -> String {
         self.html.html()
     }
 
-    /// Check if selector matches any elements
+    /// Check if the selector matches any elements in the page.
+    ///
+    /// # Arguments
+    ///
+    /// * `selector` - CSS selector string
+    ///
+    /// # Returns
+    ///
+    /// True if at least one element matches, False otherwise
+    ///
+    /// # Raises
+    ///
+    /// * `ValueError` - If the CSS selector is invalid
+    ///
+    /// # Examples
+    ///
+    /// ```python
+    /// if page.has(".out-of-stock"):
+    ///     print("Product unavailable")
+    /// ```
     pub fn has(&self, selector: &str) -> PyResult<bool> {
         let sel = Selector::parse(selector)
             .map_err(|_| PyErr::new::<pyo3::exceptions::PyValueError, _>(
@@ -172,7 +404,26 @@ impl WebPage {
         Ok(self.html.select(&sel).next().is_some())
     }
 
-    /// Count matching elements
+    /// Count the number of elements matching the selector.
+    ///
+    /// # Arguments
+    ///
+    /// * `selector` - CSS selector string
+    ///
+    /// # Returns
+    ///
+    /// Number of matching elements
+    ///
+    /// # Raises
+    ///
+    /// * `ValueError` - If the CSS selector is invalid
+    ///
+    /// # Examples
+    ///
+    /// ```python
+    /// review_count = page.count(".review")
+    /// image_count = page.count("img")
+    /// ```
     pub fn count(&self, selector: &str) -> PyResult<usize> {
         let sel = Selector::parse(selector)
             .map_err(|_| PyErr::new::<pyo3::exceptions::PyValueError, _>(
@@ -182,7 +433,36 @@ impl WebPage {
         Ok(self.html.select(&sel).count())
     }
 
-    /// Get absolute URL (resolve relative URLs)
+    /// Resolve a relative URL to an absolute URL using the page's base URL.
+    ///
+    /// If the input URL is already absolute (starts with http:// or https://),
+    /// returns it unchanged. Otherwise, combines with the page's URL.
+    ///
+    /// # Arguments
+    ///
+    /// * `relative_url` - URL to resolve (can be absolute, root-relative, or path-relative)
+    ///
+    /// # Returns
+    ///
+    /// Absolute URL
+    ///
+    /// # Examples
+    ///
+    /// ```python
+    /// page = WebPage(html, url="https://example.com/products/123")
+    ///
+    /// # Root-relative URL
+    /// abs_url = page.absolute_url("/images/photo.jpg")
+    /// # Returns: "https://example.com/images/photo.jpg"
+    ///
+    /// # Path-relative URL
+    /// abs_url = page.absolute_url("../other")
+    /// # Returns: "https://example.com/products/../other"
+    ///
+    /// # Already absolute
+    /// abs_url = page.absolute_url("https://other.com/page")
+    /// # Returns: "https://other.com/page"
+    /// ```
     pub fn absolute_url(&self, relative_url: &str) -> PyResult<String> {
         if relative_url.starts_with("http://") || relative_url.starts_with("https://") {
             return Ok(relative_url.to_string());

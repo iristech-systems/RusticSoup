@@ -5,7 +5,95 @@ All notable changes to RusticSoup will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-01-08
+
+### Added
+
+- Documentation: New guides `help/fallback_selectors.md` and `docs/help/itempage_containers.md` that mirror `test_new_features.py` and `tests/test_itempage_field.py` with shortened, copy‑pasteable examples.
+- Help Center: TOC updated to include the new guides.
+- README: Links to the new guides under “Documentation & Examples”.
+- Cross-links: Quickstart and Field Usage now point to the new guides.
+
+- **🎯 Fallback Selectors**: Field now supports multiple CSS selectors with automatic fallback
+  - Pass a list of selectors: `Field(css=["span.price", "div.price", ".price"])`
+  - Tries each selector in order until one returns a non-empty result
+  - Perfect for handling different site layouts with a single field definition
+
+- **📋 Container+Mapping Extraction**: Field can now extract lists of structured data
+  - New `container` and `mapping` parameters for list extraction
+  - `Field(container='div.offer', mapping={'title': 'h3', 'price': '.price'})`
+  - Returns list of dicts, one per container element
+  - Ideal for extracting product grids, offers lists, reviews, etc.
+
+- **📚 Complete IDE Support**: Comprehensive documentation for all APIs
+  - Added Rust docstrings to all classes and methods (visible in Python help())
+  - Created `.pyi` type stub files for full IDE autocomplete
+  - Documentation includes parameters, return types, exceptions, and examples
+  - Works with all Python IDEs (VS Code, PyCharm, etc.)
+
+- **🔧 Data Extraction Utilities** (Python side):
+  - `extractors.py`: Type conversion and common data extractors
+    - `extract_price()`, `extract_int()`, `extract_bool()`
+    - `extract_email()`, `extract_phone()`, `extract_url()`
+    - `extract_date()` with common format support
+  - `json_utils.py`: JSON extraction from HTML
+    - `extract_json_ld()`: Extract JSON-LD structured data
+    - `extract_json_from_script()`: Find JSON in script tags
+    - `extract_json_variable()`: Extract JSON from JS variables
+  - WebPage now has convenience methods: `page.json_ld()`, `page.json_in_script()`
+
+### Changed
+
+- **Field signature updated**: Now accepts `css` as string OR list
+- **Field type**: `css` parameter changed from `Option<String>` to `Option<PyObject>` in Rust
+- Updated `.pyi` stubs to reflect new Field capabilities
+
+### Examples
+
+```python
+from rusticsoup import Field, WebPage, ItemPage
+
+# Fallback selectors
+price = Field(css=["span.price-new", "span.price-old", ".price"])
+
+# Container + mapping for lists
+offers = Field(
+    container='div.offer',
+    mapping={
+        'seller': 'div.seller-name',
+        'price': '.price',
+        'link': 'a@href',
+    }
+)
+
+# Use in ItemPage
+class ProductPage(ItemPage):
+    title = Field(css='h1')
+    price = Field(css=["span.sale-price", "span.price"])
+    offers = Field(container='div.offer', mapping={
+        'seller': '.seller',
+        'price': '.price'
+    })
+```
+
+## [0.2.27] - 2025-11-07
+
+### Fixed
+
+- Fixed import system to properly export all classes and functions
+- Resolved linting issues with explicit imports (ruff-compliant)
+- Ensured `WebPage`, `Field`, `ItemPage`, and all helper classes are correctly importable
+- All pre-commit hooks now pass
+
+### Notes
+
+- This is a bug-fix release ensuring all imports work correctly
+- Fully backward compatible with 0.2.26
+- All functionality verified and tested
+
 ## [0.2.26] - 2025-11-07
+
+*Skipped - import issues discovered before wide distribution*
 
 ### Added
 
@@ -38,17 +126,10 @@ from rusticsoup import WebPage, Field
 from rusticsoup_helpers import ItemPage  # Separate file needed
 ```
 
-**Now (0.2.26):**
+**Now (0.2.27):**
 ```python
 from rusticsoup import WebPage, Field, ItemPage  # All in one package!
 ```
-
-### Notes
-
-- This is a major improvement release with dependency updates and integrated helpers
-- All existing functionality remains unchanged
-- Fully backward compatible with 0.2.2
-- `rusticsoup_helpers.py` is no longer needed - everything is built-in
 
 ## [0.2.25] - 2025-11-07
 

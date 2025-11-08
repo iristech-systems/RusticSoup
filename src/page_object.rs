@@ -2,31 +2,85 @@ use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList, PyType};
 use crate::webpage::WebPage;
 
-/// Field descriptor for PageObject fields
-/// Similar to web-poet's field() function
+/// Field descriptor for declarative data extraction from HTML pages.
+///
+/// Field provides a declarative way to extract data from HTML using CSS selectors
+/// or XPath expressions. It supports attribute extraction, getting all matches,
+/// default values, required fields, transformation functions, fallback selectors,
+/// and structured list extraction.
+///
+/// # Arguments
+///
+/// * `css` - CSS selector string or list of selectors for fallback (e.g., "h1.title", ["h1.title", "h1"])
+/// * `xpath` - XPath expression (not yet implemented)
+/// * `attr` - Attribute to extract (e.g., "href", "src", "data-id")
+/// * `get_all` - Extract from all matching elements instead of just the first
+/// * `default` - Default value if extraction fails or element not found
+/// * `required` - Whether the field is required (raises error if not found)
+/// * `transform` - Function or list of functions to transform extracted value
+/// * `container` - Container selector for list extraction with mapping
+/// * `mapping` - Field mappings dict for structured list extraction
+///
+/// # Examples
+///
+/// ```python
+/// from rusticsoup import Field, WebPage
+///
+/// # Simple text extraction
+/// title = Field(css="h1.title")
+///
+/// # Fallback selectors - tries each until one matches
+/// price = Field(css=["span.price", "div.price", ".price"])
+///
+/// # Attribute extraction
+/// link = Field(css="a.product-link", attr="href")
+///
+/// # Extract all matching elements
+/// all_prices = Field(css=".price", get_all=True)
+///
+/// # With transformation
+/// price = Field(
+///     css=".price",
+///     transform=lambda s: float(s.replace("$", "").replace(",", ""))
+/// )
+///
+/// # List extraction with mapping
+/// offers = Field(
+///     container='div.offer',
+///     mapping={
+///         'title': 'h3',
+///         'price': '.price',
+///         'link': 'a@href'
+///     }
+/// )
+/// ```
 #[pyclass]
 pub struct Field {
-    css: Option<String>,
+    css: Option<PyObject>,  // Can be string or list of strings
     xpath: Option<String>,
     attr: Option<String>,
     get_all: bool,
     default: Option<String>,
     required: bool,
     transform: Option<PyObject>,
+    container: Option<String>,  // For list extraction
+    mapping: Option<PyObject>,  // Dict for structured extraction
 }
 
 #[pymethods]
 impl Field {
     #[new]
-    #[pyo3(signature = (css=None, xpath=None, attr=None, get_all=false, default=None, required=true, transform=None))]
+    #[pyo3(signature = (css=None, xpath=None, attr=None, get_all=false, default=None, required=true, transform=None, container=None, mapping=None))]
     pub fn new(
-        css: Option<String>,
+        css: Option<PyObject>,
         xpath: Option<String>,
         attr: Option<String>,
         get_all: bool,
         default: Option<String>,
         required: bool,
         transform: Option<PyObject>,
+        container: Option<String>,
+        mapping: Option<PyObject>,
     ) -> Self {
         Self {
             css,
@@ -36,22 +90,65 @@ impl Field {
             default,
             required,
             transform,
+            container,
+            mapping,
         }
     }
 
-    /// Extract value from WebPage based on field configuration
+    /// Extract value from a WebPage based on this field's configuration.
+    ///
+    /// Processes the field's selector (CSS or XPath), extracts the value,
+    /// and applies any transformation functions. Supports fallback selectors
+    /// and container+mapping for list extraction.
+    ///
+    /// # Arguments
+    ///
+    /// * `page` - WebPage object to extract data from
+    ///
+    /// # Returns
+    ///
+    /// Extracted and transformed value (str, list, or custom type from transform)
+    ///
+    /// # Raises
+    ///
+    /// * `ValueError` - If field has no selector or selector is invalid
+    /// * `NotImplementedError` - If using XPath (not yet supported)
     pub fn extract(&self, py: Python, page: &WebPage) -> PyResult<PyObject> {
-        let mut value = if let Some(css) = &self.css {
-            let spec = self.build_spec(css);
-            self.extract_with_spec(py, page, &spec)?
+        // Handle container + mapping extraction (list of dicts)
+        if let (Some(container), Some(mapping)) = (&self.container, &self.mapping) {
+            let mapping_dict = mapping.downcast_bound::<PyDict>(py)
+                .map_err(|_| PyErr::new::<pyo3::exceptions::PyTypeError, _>(
+                    "mapping must be a dictionary"
+                ))?;
+            return page.extract_all(py, container, mapping_dict);
+        }
+
+        let mut value = if let Some(css_obj) = &self.css {
+            // Try to extract as list of selectors (fallback)
+            if let Ok(css_list) = css_obj.downcast_bound::<PyList>(py) {
+                self.extract_with_fallback(py, page, css_list)?
+            }
+            // Try as single string selector
+            else if let Ok(css_str) = css_obj.extract::<String>(py) {
+                let spec = self.build_spec(&css_str);
+                self.extract_with_spec(py, page, &spec)?
+            } else {
+                return Err(PyErr::new::<pyo3::exceptions::PyTypeError, _>(
+                    "css must be a string or list of strings"
+                ));
+            }
         } else if let Some(_xpath) = &self.xpath {
             // XPath support would go here
             return Err(PyErr::new::<pyo3::exceptions::PyNotImplementedError, _>(
                 "XPath support not yet implemented"
             ));
+        } else if self.container.is_some() {
+            return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                "Field with container requires mapping parameter"
+            ));
         } else {
             return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-                "Field must have either css or xpath selector"
+                "Field must have either css, xpath, or container+mapping"
             ));
         };
 
@@ -96,6 +193,51 @@ impl Field {
             Err(PyErr::new::<pyo3::exceptions::PyTypeError, _>(
                 "transform must be a callable or list of callables"
             ))
+        }
+    }
+
+    /// Try multiple selectors in order until one succeeds
+    fn extract_with_fallback(&self, py: Python, page: &WebPage, selectors: &Bound<'_, PyList>) -> PyResult<PyObject> {
+        for selector_obj in selectors.iter() {
+            if let Ok(selector_str) = selector_obj.extract::<String>() {
+                let spec = self.build_spec(&selector_str);
+
+                // Try to extract with this selector
+                match self.extract_with_spec(py, page, &spec) {
+                    Ok(value) => {
+                        // Check if we got a non-empty result
+                        // For strings, check if non-empty
+                        if let Ok(s) = value.extract::<String>(py) {
+                            if !s.is_empty() {
+                                return Ok(value);
+                            }
+                        }
+                        // For lists, check if non-empty
+                        else if let Ok(list) = value.downcast_bound::<PyList>(py) {
+                            if list.len() > 0 {
+                                return Ok(value);
+                            }
+                        }
+                        // For other types, assume valid
+                        else if !value.is_none(py) {
+                            return Ok(value);
+                        }
+                    }
+                    Err(_) => {
+                        // This selector failed, try next one
+                        continue;
+                    }
+                }
+            }
+        }
+
+        // All selectors failed, return default or empty
+        if let Some(default) = &self.default {
+            Ok(default.clone().into_py(py))
+        } else if self.get_all {
+            Ok(PyList::empty_bound(py).into())
+        } else {
+            Ok("".into_py(py))
         }
     }
 
@@ -158,8 +300,29 @@ impl Field {
     }
 }
 
-/// Base class for PageObjects
-/// Similar to web-poet's ItemPage
+/// Base class for declarative page object models.
+///
+/// PageObject provides a structured way to extract data from web pages using
+/// Field descriptors. Similar to web-poet's ItemPage pattern, it allows you
+/// to define extraction logic as class attributes.
+///
+/// # Examples
+///
+/// ```python
+/// from rusticsoup import Field, PageObject, WebPage
+///
+/// class ProductPage(PageObject):
+///     title = Field(css="h1.product-title")
+///     price = Field(css=".price", transform=extract_price)
+///     image = Field(css="img.product-image", attr="src")
+///     description = Field(css=".description")
+///
+/// # Usage
+/// page = WebPage(html, url="https://example.com/product")
+/// product = ProductPage(page)
+/// print(product.title)  # Auto-extracted
+/// print(product.price)  # Transformed value
+/// ```
 #[pyclass(subclass)]
 pub struct PageObject {
     #[pyo3(get)]
@@ -173,7 +336,18 @@ impl PageObject {
         Self { page }
     }
 
-    /// Extract all fields from the page based on Field descriptors
+    /// Create a PageObject instance and extract all fields from the page.
+    ///
+    /// This class method inspects the class for Field descriptors and
+    /// automatically extracts all defined fields from the provided page.
+    ///
+    /// # Arguments
+    ///
+    /// * `page` - WebPage object containing the HTML to extract from
+    ///
+    /// # Returns
+    ///
+    /// PageObject instance with all fields extracted
     #[classmethod]
     pub fn from_page(_cls: &Bound<'_, PyType>, py: Python, page: &WebPage) -> PyResult<PyObject> {
         // This will be called from Python to extract all fields
@@ -181,7 +355,13 @@ impl PageObject {
         Ok(page.clone().into_py(py))
     }
 
-    /// Convert PageObject to dict
+    /// Convert PageObject to a dictionary representation.
+    ///
+    /// Returns a dict containing all extracted field values.
+    ///
+    /// # Returns
+    ///
+    /// Dictionary with field names as keys and extracted values
     pub fn to_dict<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
         let dict = PyDict::new_bound(py);
 
@@ -197,8 +377,29 @@ impl PageObject {
     }
 }
 
-/// Processor function decorator
-/// Allows defining extraction logic as functions
+/// Processor decorator for defining extraction logic as functions.
+///
+/// Processor allows you to define extraction logic as decorated functions
+/// that receive a WebPage and return extracted data. This is an alternative
+/// to the Field descriptor approach.
+///
+/// # Examples
+///
+/// ```python
+/// from rusticsoup import processor, WebPage
+///
+/// @processor()
+/// def extract_product_data(page: WebPage):
+///     return {
+///         'title': page.text('h1'),
+///         'price': page.text('.price'),
+///         'images': page.attr_all('img', 'src')
+///     }
+///
+/// # Usage
+/// page = WebPage(html)
+/// data = extract_product_data(page)
+/// ```
 #[pyclass]
 pub struct Processor {
     func: PyObject,
@@ -213,7 +414,15 @@ impl Processor {
         Self { func, input_type }
     }
 
-    /// Call the processor function
+    /// Call the processor function with a WebPage.
+    ///
+    /// # Arguments
+    ///
+    /// * `page` - WebPage object to process
+    ///
+    /// # Returns
+    ///
+    /// Result from the processor function
     pub fn __call__(&self, py: Python, page: Py<WebPage>) -> PyResult<PyObject> {
         self.func.call1(py, (page,))
     }
@@ -223,7 +432,27 @@ impl Processor {
     }
 }
 
-/// Helper to create a processor decorator
+/// Create a processor decorator for extraction functions.
+///
+/// # Arguments
+///
+/// * `input_type` - Optional type hint for the input (for documentation)
+///
+/// # Returns
+///
+/// ProcessorDecorator that can be used to wrap extraction functions
+///
+/// # Examples
+///
+/// ```python
+/// @processor()
+/// def extract_reviews(page):
+///     return page.extract_all('.review', {
+///         'author': '.author',
+///         'rating': '.rating@data-value',
+///         'text': '.review-text'
+///     })
+/// ```
 #[pyfunction]
 #[pyo3(signature = (input_type=None))]
 pub fn processor(input_type: Option<String>) -> PyResult<ProcessorDecorator> {
@@ -242,7 +471,33 @@ impl ProcessorDecorator {
     }
 }
 
-/// Helper function to extract PageObject from WebPage
+/// Extract all Field descriptors from a PageObject class into a dictionary.
+///
+/// This function inspects a PageObject class, finds all Field descriptors,
+/// extracts their values from the provided WebPage, and returns them as a dict.
+///
+/// # Arguments
+///
+/// * `page` - WebPage object to extract from
+/// * `page_object_class` - PageObject class with Field descriptors
+///
+/// # Returns
+///
+/// Dictionary with field names as keys and extracted values
+///
+/// # Examples
+///
+/// ```python
+/// from rusticsoup import Field, extract_page_object, WebPage
+///
+/// class ProductPage:
+///     title = Field(css="h1")
+///     price = Field(css=".price")
+///
+/// page = WebPage(html)
+/// data = extract_page_object(page, ProductPage)
+/// # {'title': '...', 'price': '...'}
+/// ```
 #[pyfunction]
 pub fn extract_page_object<'py>(
     py: Python<'py>,

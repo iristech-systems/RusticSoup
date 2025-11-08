@@ -548,7 +548,7 @@ dependencies = [
 
 [[package]]
 name = "rusticsoup"
-version = "0.2.26"
+version = "0.3.0"
 dependencies = [
  "ahash",
  "encoding_rs",

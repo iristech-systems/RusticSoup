@@ -76,6 +76,19 @@ print(products)
 # [{"title": "Amazing Product", "price": "$29.99", "link": "/buy", "image": "/image.jpg"}]
 ```
 
+## 📚 Documentation & Examples
+
+- Help Center: [help/README.md](docs/help/README.md)
+- Quick Start: [help/quickstart.md](docs/help/quickstart.md)
+- WebPage API: [help/webpage_api.md](docs/help/webpage_api.md)
+- Field Usage: [help/field_usage.md](docs/help/field_usage.md)
+- Field Transform: [help/field_transform.md](docs/help/field_transform.md)
+- Containers & Mappings: [help/containers_and_mappings.md](docs/help/containers_and_mappings.md)
+- Fallback Selectors: [help/fallback_selectors.md](docs/help/fallback_selectors.md)
+- ItemPage: Containers + Mapping: [help/itempage_containers.md](docs/help/itempage_containers.md)
+- PageObject Pattern: [help/page_object_pattern.md](docs/help/page_object_pattern.md)
+- Examples: [examples/](examples)
+
 ## 🎯 Core Features
 
 ### 🌟 NEW: WebPage API (web-poet inspired)
@@ -106,7 +119,7 @@ if page.has("nav.menu"):
 absolute_url = page.absolute_url("/products/123")
 ```
 
-**[📖 Full WebPage API Documentation](WEBPAGE_API.md)** | **[🚀 Quick Start Guide](WEBPAGE_QUICKSTART.md)**
+**[📖 Full WebPage API Documentation](docs/help/webpage_api.md)** | **[🚀 Quick Start Guide](docs/help/quickstart.md)** | **[🆘 Help Center](docs/help/README.md)** | **[🧪 Examples](examples)
 
 ### ✅ Universal Extraction
 Works with **any HTML structure** - no site-specific parsers needed:

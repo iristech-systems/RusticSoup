@@ -5,18 +5,54 @@ This module combines Rust-based high-performance HTML parsing with Python-based
 helper classes for the PageObject pattern.
 """
 
-# Import all Rust exports
-from .rusticsoup import *  # noqa: F403
+# Import the Rust module
+from . import rusticsoup as _rusticsoup
 
-# Import specific items we need for type hints and runtime checks
-from .rusticsoup import Field, WebPage  # noqa: F401
-
-# Import the rust module itself to access metadata
-from . import rusticsoup as _rusticsoup_module
+# Re-export everything from the Rust module
+from .rusticsoup import (  # noqa: F401
+    Element,
+    EncodingError,
+    Field,
+    HTMLParseError,
+    PageObject,
+    Processor,
+    RusticSoup,
+    RusticSoupError,
+    SelectorError,
+    WebPage,
+    WebScraper,
+    extract,
+    extract_all,
+    extract_data,
+    extract_page_object,
+    extract_table_data,
+    parse_html,
+    processor,
+)
 
 # Import version and metadata from Rust module
-__doc__ = _rusticsoup_module.__doc__
-__version__ = _rusticsoup_module.__version__
+__doc__ = _rusticsoup.__doc__
+__version__ = _rusticsoup.__version__
+
+# Import utility modules
+from . import extractors
+from . import json_utils
+
+# Convenience imports for common extractors
+from .extractors import (
+    extract_price,
+    extract_int,
+    extract_bool,
+    extract_email,
+    extract_phone,
+    extract_url,
+    clean_text,
+)
+from .json_utils import (
+    extract_json_ld,
+    extract_json_from_script,
+    extract_json_variable,
+)
 
 
 # Python-side helper classes for PageObject pattern
@@ -187,12 +223,101 @@ def page_object(cls):
     return PageObjectWrapper
 
 
-# Update __all__ to include helper classes
-__all__ = list(
-    _rusticsoup_module.__all__ if hasattr(_rusticsoup_module, "__all__") else []
-) + [
+# Extend WebPage with JSON extraction methods
+def _webpage_json_ld(self):
+    """
+    Extract JSON-LD structured data from the page.
+
+    Returns:
+        List of JSON-LD objects
+
+    Example:
+        >>> page = WebPage(html)
+        >>> data = page.json_ld()
+        >>> print(data[0]['@type'])
+    """
+    return extract_json_ld(self.html())
+
+
+def _webpage_json_in_script(self, pattern=None):
+    """
+    Extract JSON objects from script tags.
+
+    Args:
+        pattern: Optional regex pattern to match specific JSON
+
+    Returns:
+        List of JSON objects
+
+    Example:
+        >>> page = WebPage(html)
+        >>> data = page.json_in_script()
+    """
+    return extract_json_from_script(self.html(), pattern)
+
+
+def _webpage_json_variable(self, variable_name):
+    """
+    Extract JSON assigned to a JavaScript variable.
+
+    Args:
+        variable_name: Name of the JS variable
+
+    Returns:
+        JSON object or None
+
+    Example:
+        >>> page = WebPage(html)
+        >>> data = page.json_variable('pageData')
+    """
+    return extract_json_variable(self.html(), variable_name)
+
+
+# Monkey-patch WebPage with new methods
+WebPage.json_ld = _webpage_json_ld
+WebPage.json_in_script = _webpage_json_in_script
+WebPage.json_variable = _webpage_json_variable
+
+
+# Build __all__ with Rust exports and Python helpers
+__all__ = [
+    # Rust exports
+    "Element",
+    "EncodingError",
+    "Field",
+    "HTMLParseError",
+    "PageObject",
+    "Processor",
+    "RusticSoup",
+    "RusticSoupError",
+    "SelectorError",
+    "WebPage",
+    "WebScraper",
+    "extract",
+    "extract_all",
+    "extract_data",
+    "extract_page_object",
+    "extract_table_data",
+    "parse_html",
+    "processor",
+    # Python helper classes
     "ItemPage",
     "AutoExtract",
     "page_object",
     "PageObjectMeta",
+    # Utility modules
+    "extractors",
+    "json_utils",
+    # Common extractors
+    "extract_price",
+    "extract_int",
+    "extract_bool",
+    "extract_email",
+    "extract_phone",
+    "extract_url",
+    "clean_text",
+    # JSON utilities
+    "extract_json_ld",
+    "extract_json_from_script",
+    "extract_json_variable",
 ]
