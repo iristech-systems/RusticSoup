@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # Example scraper service using RusticSoup
   scraper:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile.example
     environment:
@@ -11,8 +11,8 @@ services:
     volumes:
       - ./data:/app/data  # Mount for scraped data
     restart: unless-stopped
-    
-  # Web scraping service example  
+
+  # Web scraping service example
   web-scraper:
     image: python:3.11-slim
     volumes:

@@ -319,7 +319,7 @@ impl WebPage {
         Ok(result.into())
     }
 
-    /// Extract multiple items using a container selector and field mappings.
+    /// Extract multiple items using a container selector and field mappings or ItemPage class.
     ///
     /// Finds all containers matching the selector, then extracts fields from each container.
     /// Perfect for extracting lists of products, reviews, or any repeated structure.
@@ -327,15 +327,17 @@ impl WebPage {
     /// # Arguments
     ///
     /// * `container_selector` - CSS selector for the container elements
-    /// * `field_mappings` - Dictionary mapping field names to selector specs
+    /// * `mapping_or_class` - Dictionary mapping field names to selector specs, OR an ItemPage class
     ///
     /// # Returns
     ///
-    /// List of dictionaries, one per container, with extracted fields
+    /// - If mapping is a dict: List of dictionaries with extracted fields
+    /// - If mapping is an ItemPage class: List of ItemPage instances
     ///
     /// # Examples
     ///
     /// ```python
+    /// # Dict-based extraction
     /// products = page.extract_all('.product', {
     ///     'name': 'h3.title',
     ///     'price': '.price',
@@ -344,13 +346,16 @@ impl WebPage {
     /// })
     /// # [{'name': '...', 'price': '...', ...}, {...}, ...]
     ///
-    /// reviews = page.extract_all('.review', {
-    ///     'author': '.author',
-    ///     'rating': '.stars@data-rating',
-    ///     'text': '.review-text'
-    /// })
+    /// # ItemPage-based extraction
+    /// class Review(ItemPage):
+    ///     author = Field(css='.author')
+    ///     rating = Field(css='.stars', attr='data-rating')
+    ///     text = Field(css='.review-text')
+    ///
+    /// reviews = page.extract_all('.review', Review)
+    /// # [Review(...), Review(...), ...]
     /// ```
-    pub fn extract_all(&self, py: Python, container_selector: &str, field_mappings: &Bound<'_, PyDict>) -> PyResult<PyObject> {
+    pub fn extract_all(&self, py: Python, container_selector: &str, mapping_or_class: &Bound<'_, PyAny>) -> PyResult<PyObject> {
         let list = PyList::empty_bound(py);
 
         let container_sel = Selector::parse(container_selector)
@@ -358,9 +363,24 @@ impl WebPage {
                 format!("Invalid container selector: {}", container_selector)
             ))?;
 
-        for container in self.html.select(&container_sel) {
-            let item = self.extract_from_element(py, &container, field_mappings)?;
-            list.append(item)?;
+        // Check if mapping_or_class is a dict or a class
+        if let Ok(field_mappings) = mapping_or_class.downcast::<PyDict>() {
+            // Original dict-based extraction
+            for container in self.html.select(&container_sel) {
+                let item = self.extract_from_element(py, &container, field_mappings)?;
+                list.append(item)?;
+            }
+        } else {
+            // Assume it's an ItemPage class - extract using class instantiation
+            for container in self.html.select(&container_sel) {
+                // Create a WebPage from the container's HTML
+                let container_html = container.html();
+                let container_page = WebPage::new(&container_html, self.url.clone(), None);
+
+                // Instantiate the ItemPage class with the container WebPage
+                let instance = mapping_or_class.call1((container_page,))?;
+                list.append(instance)?;
+            }
         }
 
         Ok(list.into())
@@ -530,13 +550,23 @@ impl WebPage {
         element: &ElementRef,
         field_mappings: &Bound<'_, PyDict>,
     ) -> PyResult<PyObject> {
+        use crate::page_object::Field;
+
         let result = PyDict::new_bound(py);
         let elem_html = Html::parse_fragment(&element.html());
 
         for (field_name, selector_spec) in field_mappings.iter() {
             let field_name_str = field_name.extract::<String>()?;
 
-            if let Ok(spec_str) = selector_spec.extract::<String>() {
+            // Check if selector_spec is a Field object
+            if let Ok(field) = selector_spec.downcast::<Field>() {
+                // Create a WebPage from the element HTML and use Field.extract
+                let container_html = element.html();
+                let container_page = WebPage::new(&container_html, self.url.clone(), None);
+                let value = field.borrow().extract(py, &container_page)?;
+                result.set_item(field_name_str, value)?;
+            } else if let Ok(spec_str) = selector_spec.extract::<String>() {
+                // Original string-based extraction
                 let (selector, extraction_type) = parse_field_spec(&spec_str)?;
 
                 let sel = Selector::parse(&selector)

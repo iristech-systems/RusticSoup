@@ -91,7 +91,40 @@ print(products)
 
 ## 🎯 Core Features
 
-### 🌟 NEW: WebPage API (web-poet inspired)
+### 🌟 NEW in v0.4.0: ItemPage with extract_all()
+
+The cleanest extraction pattern with per-field transforms:
+
+```python
+from rusticsoup import WebPage, Field, ItemPage
+
+# Define your data model once
+class ProductReview(ItemPage):
+    author = Field(css='span.author', transform=str.strip)
+    rating = Field(css='span.rating', transform=lambda s: float(s.split()[0]))
+    text = Field(css='p.review-text', transform=str.strip)
+    # Fallback selectors for robustness
+    date = Field(css=['time.published', 'span.date'])
+
+# One line to extract everything with transforms applied!
+page = WebPage(html)
+reviews = page.extract_all('div.review', ProductReview)
+
+# Clean, type-safe access
+for review in reviews:
+    print(f"{review.author} ({review.rating}★): {review.text}")
+```
+
+**Benefits:**
+- ✅ Declarative field definitions with transforms
+- ✅ No post-processing list comprehensions
+- ✅ Reusable data models
+- ✅ Type-safe attribute access
+- ✅ Fallback selectors built-in
+
+**[📖 Full ItemPage Documentation](ITEMPAGE_EXTRACT_ALL.md)**
+
+### 🌟 WebPage API (web-poet inspired)
 
 High-level, declarative API for web scraping:
 

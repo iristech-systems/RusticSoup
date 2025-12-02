@@ -5,6 +5,77 @@ All notable changes to RusticSoup will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-01-09
+
+### Added
+
+- **🎯 ItemPage with extract_all()**: Major enhancement to extraction patterns
+  - `WebPage.extract_all()` now accepts ItemPage classes in addition to dict mappings
+  - Pass an ItemPage class: `page.extract_all('.offer', OfferClass)`
+  - Returns list of ItemPage instances with all fields auto-extracted and transforms applied
+  - Enables the cleanest possible extraction pattern with declarative field definitions
+
+- **🔧 Field Objects in Mapping Dicts**: Per-field transforms in container+mapping
+  - Field objects can now be used in mapping dicts (not just strings)
+  - `Field(container='.offer', mapping={'title': Field(css='h3', transform=str.upper)})`
+  - Each field gets its own transforms, fallback selectors, and configuration
+  - Eliminates need for post-processing list comprehensions
+
+### Changed
+
+- **WebPage.extract_all() signature**: Now accepts `mapping_or_class: &Bound<'_, PyAny>` instead of `field_mappings: &Bound<'_, PyDict>`
+  - Fully backward compatible - dict mappings still work exactly as before
+  - Auto-detects whether argument is a dict or ItemPage class
+
+- **Internal extract_from_element()**: Enhanced to support Field objects in mappings
+  - Checks if mapping value is a Field object and calls `field.extract()` if so
+  - Falls back to string-based extraction for backward compatibility
+
+### Examples
+
+```python
+from rusticsoup import WebPage, Field, ItemPage
+
+# Pattern 1: ItemPage with extract_all (cleanest!)
+class ProductReview(ItemPage):
+    author = Field(css='span.author', transform=str.strip)
+    rating = Field(css='span.rating', transform=lambda s: float(s.split()[0]))
+    text = Field(css='p.review-text', transform=str.strip)
+
+page = WebPage(html)
+reviews = page.extract_all('div.review', ProductReview)
+# All transforms applied, returns list of ProductReview instances!
+
+# Pattern 2: Field objects in mapping dict
+offers_field = Field(
+    container='.offer',
+    mapping={
+        'title': Field(css='h3', transform=str.upper),
+        'price': Field(css='.price', transform=parse_price),
+    }
+)
+offers = offers_field.extract(page)  # Transforms already applied!
+```
+
+### Benefits
+
+- **Cleaner Code**: No more post-processing list comprehensions
+- **Declarative**: All extraction logic lives with field definitions
+- **Reusable**: Define ItemPage classes once, use everywhere
+- **Type-Safe**: Access extracted data as attributes (`offer.price` not `offer['price']`)
+- **Maintainable**: Field definitions are self-documenting
+
+### Files Added
+
+- `tests/test_itempage_extract_all.py`: Comprehensive test suite for new features
+- `examples/google_shopping_itempage.py`: Real-world example using ItemPage pattern
+- `ITEMPAGE_EXTRACT_ALL.md`: Complete documentation of new features
+
+### Backward Compatibility
+
+✅ 100% backward compatible - all existing code continues to work unchanged.
+The new patterns are opt-in enhancements.
+
 ## [0.3.0] - 2025-01-08
 
 ### Added
