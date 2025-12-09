@@ -342,6 +342,7 @@ impl Element {
     }
 
     /// BeautifulSoup-like .get(attr, default=None)
+    #[pyo3(signature = (name, default=None))]
     fn get(&self, py: Python, name: &str, default: Option<PyObject>) -> PyObject {
         if let Some(val) = self.attributes.get(name) {
             PyString::new_bound(py, val).into()

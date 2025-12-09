@@ -1,3 +1,4 @@
+#![allow(unexpected_cfgs)]
 use pyo3::create_exception;
 use pyo3::exceptions::PyException;
 

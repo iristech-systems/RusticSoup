@@ -1,5 +1,5 @@
 use pyo3::prelude::*;
-use pyo3::types::{PyDict, PyList, PyString};
+use pyo3::types::{PyDict, PyList};
 use scraper::{Html, Selector, ElementRef};
 use std::collections::HashMap;
 

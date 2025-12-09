@@ -5,6 +5,30 @@ All notable changes to RusticSoup will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-01-20
+
+### Added
+
+- **🛡️ Authenticated Telemetry**: Support for OTLP headers in `init_telemetry`
+  - Pass custom headers (e.g., SigNoz/Jaeger auth tokens): `init_telemetry(headers={"signoz-access-token": "..."})`
+  - Configurable OTLP endpoint support via explicit `endpoint` argument.
+
+- **🚀 Flexible Telemetry Configuration**:
+  - **Dual Mode**: Stream traces to console AND OTLP collector simultaneously.
+  - **Zero-Cost Defaults**: Telemetry is opt-in at runtime; if not initialized, overhead is negligible.
+  - **Feature Flag**: Added `telemetry` feature (enabled by default) to allow building ultra-light binaries if needed.
+
+- **✨ Code Polish & IDE Support (Python 3.14 Ready)**:
+  - **Type Stubs**: `__init__.pyi` fully aligned with implementation for perfect autocomplete.
+  - **Docstrings**: Comprehensive Google-style docstrings for all exported members.
+  - **Clean Builds**: Eliminated all standard Rust warnings and PyO3 false positives.
+  - **Strict Typing**: Headers now enforced as `dict[str, str]` for type safety.
+
+### Changed
+
+- **Telemetry Initialization**: `init_telemetry` now accepts `headers` and `console` arguments.
+- **Dependencies**: Downgraded `tonic` to 0.9 to resolve version conflicts with `opentelemetry-otlp` 0.14.
+
 ## [0.4.0] - 2025-01-09
 
 ### Added

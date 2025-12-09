@@ -49,16 +49,16 @@ mod universal_extractor;
 mod bs4_api;
 mod webpage;
 mod page_object;
+mod telemetry;
 
 use scraper::{WebScraper, Element, parse_html, extract, extract_all};
 use universal_extractor::{extract_data, extract_table_data};
 use bs4_api::RusticSoup;
-use webpage::WebPage;
-use page_object::{Field, PageObject, Processor, processor, extract_page_object};
+// Redundant imports removed (used fully qualified below)
 
 #[pymodule]
 fn rusticsoup(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add("__version__", "0.4.0")?;
+    m.add("__version__", "0.5.0")?;
     m.add("__doc__", "Lightning-fast HTML parser and data extractor with WebPage API - BeautifulSoup killer built in Rust")?;
 
     // Exceptions (exposed types)
@@ -85,12 +85,15 @@ fn rusticsoup(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<RusticSoup>()?;
 
     // WebPoet-style WebPage API
-    m.add_class::<WebPage>()?;
-    m.add_class::<Field>()?;
-    m.add_class::<PageObject>()?;
-    m.add_class::<Processor>()?;
-    m.add_function(wrap_pyfunction!(processor, m)?)?;
-    m.add_function(wrap_pyfunction!(extract_page_object, m)?)?;
+    m.add_class::<webpage::WebPage>()?;
+    m.add_class::<page_object::Field>()?;
+    m.add_class::<page_object::PageObject>()?;
+    m.add_class::<page_object::Processor>()?;
+    m.add_class::<page_object::ProcessorDecorator>()?;
+    m.add_function(wrap_pyfunction!(page_object::processor, m)?)?;
+    m.add_function(wrap_pyfunction!(page_object::extract_page_object, m)?)?;
+    m.add_function(wrap_pyfunction!(telemetry::init_telemetry, m)?)?;
+    m.add_function(wrap_pyfunction!(telemetry::shutdown_telemetry, m)?)?;
 
     Ok(())
 }

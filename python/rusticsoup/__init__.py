@@ -29,6 +29,8 @@ from .rusticsoup import (  # noqa: F401
     parse_html,
     processor,
 )
+from .rusticsoup import init_telemetry as _init_telemetry_rust
+from .rusticsoup import shutdown_telemetry as _shutdown_telemetry_rust
 
 # Import version and metadata from Rust module
 __doc__ = _rusticsoup.__doc__
@@ -99,12 +101,9 @@ class ItemPage(metaclass=PageObjectMeta):
         self._page = page
         self._extracted = {}
 
-        # Get fields from class (not instance)
-        fields = getattr(self.__class__, "_fields", {})
-
-        # Auto-extract all fields
-        for field_name, field in fields.items():
-            self._extracted[field_name] = field.extract(page)
+        # Use Rust implementation for speed and telemetry
+        # This triggers the ItemPage.extract spans defined in rusticsoup
+        self._extracted = extract_page_object(page, self.__class__)
 
     def __getattribute__(self, name):
         """Override to return extracted values instead of Field objects"""
@@ -279,6 +278,36 @@ WebPage.json_in_script = _webpage_json_in_script
 WebPage.json_variable = _webpage_json_variable
 
 
+def init_telemetry(endpoint: str | None = None, headers: dict[str, str] | None = None, console: bool = False) -> None:
+    """
+    Initialize OpenTelemetry tracing for RusticSoup.
+    
+    This function configures the global tracer provider. It can export traces to 
+    an OTLP endpoint (e.g., SigNoz, Jaeger) and/or the standard output.
+    
+    If the 'telemetry' feature is disabled in the build, this function is a no-op.
+
+    Args:
+        endpoint: OTLP gRPC endpoint URL (e.g. "http://localhost:4317").
+                 If None and console is False, defaults to http://localhost:4317.
+        headers: Dictionary of headers to send with OTLP requests.
+                 Useful for authentication (e.g. {"signoz-access-token": "..."}).
+        console: If True, also prints traces to stdout (JSON format).
+
+    Example:
+        >>> init_telemetry(endpoint="http://localhost:4317", console=True)
+    """
+    _init_telemetry_rust(endpoint, headers, console)
+
+def shutdown_telemetry() -> None:
+    """
+    Shutdown the OpenTelemetry tracer provider.
+    
+    Ensures all pending spans are flushed/exported before the application exits.
+    """
+    _shutdown_telemetry_rust()
+
+
 # Build __all__ with Rust exports and Python helpers
 __all__ = [
     # Rust exports
@@ -320,4 +349,7 @@ __all__ = [
     "extract_json_ld",
     "extract_json_from_script",
     "extract_json_variable",
+    # Telemetry
+    "init_telemetry",
+    "shutdown_telemetry",
 ]

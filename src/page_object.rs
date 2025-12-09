@@ -498,30 +498,137 @@ impl ProcessorDecorator {
 /// data = extract_page_object(page, ProductPage)
 /// # {'title': '...', 'price': '...'}
 /// ```
+// Add these imports
+// Add KeyValue import
+// Add KeyValue import
+#[cfg(feature = "telemetry")]
+use opentelemetry::{global, KeyValue, trace::{Tracer, TraceContextExt, Status}};
+
+/// Extract all Field descriptors from a PageObject class into a dictionary.
+///
+/// This function inspects a PageObject class, finds all Field descriptors,
+/// extracts their values from the provided WebPage, and returns them as a dict.
+///
+/// # Arguments
+///
+/// * `page` - WebPage object to extract from
+/// * `page_object_class` - PageObject class with Field descriptors
+///
+/// # Returns
+///
+/// Dictionary with field names as keys and extracted values
+///
+/// # Examples
+///
+/// ```python
+/// from rusticsoup import Field, extract_page_object, WebPage
+///
+/// class ProductPage:
+///     title = Field(css="h1")
+///     price = Field(css=".price")
+///
+/// page = WebPage(html)
+/// data = extract_page_object(page, ProductPage)
+/// # {'title': '...', 'price': '...'}
+/// ```
 #[pyfunction]
 pub fn extract_page_object<'py>(
     py: Python<'py>,
     page: &WebPage,
     page_object_class: &Bound<'py, PyAny>,
 ) -> PyResult<Bound<'py, PyDict>> {
-    // Get class fields
-    let class_dict = page_object_class.getattr("__dict__")?;
-    let dict_bound = class_dict.downcast::<PyDict>()?;
-
-    let result = PyDict::new_bound(py);
-
-    // Extract each field
-    for (key, value) in dict_bound.iter() {
-        if let Ok(key_str) = key.extract::<String>() {
-            if !key_str.starts_with('_') {
-                // Check if it's a Field descriptor
-                if let Ok(field) = value.downcast::<Field>() {
-                    let extracted_value = field.borrow().extract(py, page)?;
-                    result.set_item(key_str, extracted_value)?;
+    #[cfg(feature = "telemetry")]
+    {
+        // Start page span using in_span to ensure it's ended correctly
+        let tracer = global::tracer("rusticsoup");
+        let class_name = page_object_class.getattr("__name__")?.extract::<String>()?;
+        tracer.in_span("ItemPage.extract", |cx| {
+            cx.span().set_attribute(KeyValue::new("page_object.class", class_name));
+            
+            // Get class fields
+            let class_dict = page_object_class.getattr("__dict__")?;
+            // mappingproxy cannot be downcast to PyDict, so we iterate using generic iterator
+        
+            let result = PyDict::new_bound(py);
+        
+            // Extract each field
+            for key_res in class_dict.iter()? {
+                let key = key_res?;
+                let value = class_dict.get_item(&key)?;
+                if let Ok(key_str) = key.extract::<String>() {
+                    if !key_str.starts_with('_') {
+                        // Check if it's a Field descriptor
+                        if let Ok(field) = value.downcast::<Field>() {
+                            // Start field span
+                            let extracted_value = tracer.in_span("Field.extract", |cx| {
+                                let span = cx.span();
+                                span.set_attribute(KeyValue::new("field.name", key_str.clone()));
+                                
+                                let res = field.borrow().extract(py, page);
+                                
+                                match &res {
+                                    Ok(val) => {
+                                        // Get string representation for attribute
+                                        let val_str = val.bind(py).str().map(|s| s.to_string()).unwrap_or_else(|_| "<???>".to_string());
+                                        // Truncate if too long (optional but good practice)
+                                        let display_val = if val_str.len() > 100 {
+                                            format!("{}...", &val_str[..100])
+                                        } else {
+                                            val_str
+                                        };
+                                        span.set_attribute(KeyValue::new("field.value", display_val));
+    
+                                        // Helper to check if empty/falsy
+                                        let is_empty = val.is_none(py) || 
+                                                       val.extract::<String>(py).map(|s| s.is_empty()).unwrap_or(false) ||
+                                                       val.downcast_bound::<PyList>(py).map(|l| l.len() == 0).unwrap_or(false);
+                                        
+                                        if is_empty {
+                                            if field.borrow().required {
+                                                span.set_status(Status::Error { description: "Field required but not found".into() });
+                                            }
+                                        } else {
+                                            span.set_status(Status::Ok);
+                                        }
+                                    },
+                                    Err(e) => {
+                                        span.set_status(Status::Error { description: e.to_string().into() });
+                                    }
+                                }
+                                res
+                            })?;
+                            result.set_item(key_str, extracted_value)?;
+                        }
+                    }
+                }
+            }
+        
+            Ok(result)
+        })
+    }
+    
+    #[cfg(not(feature = "telemetry"))]
+    {
+        // Non-telemetry fallback (original logic)
+         // Get class fields
+        let class_dict = page_object_class.getattr("__dict__")?;
+        let result = PyDict::new_bound(py);
+    
+        // Extract each field
+        for key_res in class_dict.iter()? {
+            let key = key_res?;
+            let value = class_dict.get_item(&key)?;
+            if let Ok(key_str) = key.extract::<String>() {
+                if !key_str.starts_with('_') {
+                    // Check if it's a Field descriptor
+                    if let Ok(field) = value.downcast::<Field>() {
+                        let extracted_value = field.borrow().extract(py, page)?;
+                        result.set_item(key_str, extracted_value)?;
+                    }
                 }
             }
         }
+    
+        Ok(result)
     }
-
-    Ok(result)
 }

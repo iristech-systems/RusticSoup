@@ -24,8 +24,11 @@ from .rusticsoup import (
     extract_data,
     extract_page_object,
     extract_table_data,
+    extract_table_data,
     parse_html,
     processor,
+    init_telemetry,
+    shutdown_telemetry,
 )
 
 # Re-export Python helpers
@@ -129,7 +132,13 @@ __all__ = [
     # Python modules
     "extractors",
     "json_utils",
+    # Telemetry
+    "init_telemetry",
+    "shutdown_telemetry",
 ]
+
+def init_telemetry(endpoint: str | None = None, headers: dict[str, str] | None = None, console: bool = False) -> None: ...
+def shutdown_telemetry() -> None: ...
 
 __version__: str
 __doc__: str

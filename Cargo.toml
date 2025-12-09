@@ -1,6 +1,6 @@
 [package]
 name = "rusticsoup"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 authors = ["Iristech Systems"]
 description = "Lightning-fast HTML parser and data extractor with WebPage API - BeautifulSoup Alternative built in Rust"
@@ -27,6 +27,24 @@ encoding_rs_io = "0.1"
 # XPath support (optional - can remove if not needed)
 sxd-document = "0.3"
 sxd-xpath = "0.4"
+
+# Telemetry (Optional)
+opentelemetry = { version = "0.21", features = [], optional = true }
+opentelemetry_sdk = { version = "0.21", features = ["rt-tokio"], optional = true }
+opentelemetry-otlp = { version = "0.14", optional = true }
+opentelemetry-stdout = { version = "0.2.0", features = ["trace"], optional = true }
+tokio = { version = "1", features = ["full"], optional = true }
+tonic = { version = "0.9", optional = true } # Needed for MetadataMap
+
+[features]
+default = ["telemetry"] # Enable by default for now to keep verification working, or disable?
+# User wants "users that want nothing to do with it to not deal with it".
+# If we enable by default, they get the binary bloat.
+# If we disable by default, the user (cosmicbull) needs to build with `--features telemetry`.
+# Given "I have it in my enviornment", let's make it optional but enabled by default for the *dev* build, 
+# but allows producing a clean build.
+# ACTUALLY: For now, I will enable it by default so the current flow doesn't break. 
+telemetry = ["dep:opentelemetry", "dep:opentelemetry_sdk", "dep:opentelemetry-otlp", "dep:opentelemetry-stdout", "dep:tokio", "dep:tonic"]
 
 [build-dependencies]
 pyo3-build-config = "0.22"
