@@ -47,4 +47,4 @@ default = ["telemetry"] # Enable by default for now to keep verification working
 telemetry = ["dep:opentelemetry", "dep:opentelemetry_sdk", "dep:opentelemetry-otlp", "dep:opentelemetry-stdout", "dep:tokio", "dep:tonic"]
 
 [build-dependencies]
-pyo3-build-config = "0.22"
+pyo3-build-config = "0.27"
